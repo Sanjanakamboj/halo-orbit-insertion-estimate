@@ -4,8 +4,9 @@
 Earth–Moon L2 telescope-class mission, with clearly stated assumptions
 and a concrete verification plan.
 
-**Status: Milestone 2 (M2) complete. M3 (Richardson analytical halo
-seed + differential correction to a periodic orbit) not started.**
+**Status: Milestone 3 (M3) complete. M4 (arrival-state definition +
+insertion-point/velocity-matching Δv calculation) not started. The
+project deliverable (insertion Δv) is NOT complete yet.**
 
 Full derivations, equations, and assumptions live in [DESIGN.md](DESIGN.md).
 This README summarizes the current state.
@@ -45,10 +46,12 @@ for the full breakdown of each term.
 
 ## Halo family / seed status
 
-The target orbit is currently a **halo-orbit seed** (literature-scale
-placeholder amplitude/period, southern L2 family) — **not** a
-numerically corrected periodic orbit. That correction step is M3.
-See [DESIGN.md §2](DESIGN.md#2-reference-halo-family-member-m1-seed).
+M1's target orbit was a **halo-orbit seed** (literature-scale
+placeholder). **As of M3, this project has a genuine numerically
+corrected periodic Earth–Moon L2 halo orbit** (see below) — the M1
+placeholder is superseded for geometry/period purposes, though the M1
+Δv hand-estimates (below) still stand as the only Δv numbers in this
+project; M4 will compute a real insertion Δv from this corrected orbit.
 
 ## Key normalization constants (Earth–Moon CR3BP)
 
@@ -103,6 +106,34 @@ improvement. 85 tests pass.
 halo orbit — used only to exercise the propagator and Jacobi
 diagnostic.*
 
+## M3: corrected Earth–Moon L2 halo orbit (production code)
+
+M3 builds a linearized CR3BP seed near L2, differentially corrects it
+with a Newton/STM-based shooting method, and verifies the result is a
+genuine numerically periodic 3D orbit. Full details, including the
+seed derivation, correction formulation, iteration history, and two
+genuine bugs found and fixed along the way:
+[DESIGN.md — Milestone 3 section](DESIGN.md#milestone-3--l2-halo-orbit-seed-differential-correction-stm-verification-and-periodic-orbit-validation).
+
+**No manifold, arrival state, or insertion Δv is computed yet** — M3
+ends at a verified periodic orbit only.
+
+| Quantity | Value |
+|---|---:|
+| z-amplitude (`z0` at symmetry crossing) | 0.035 DU = 13,454 km |
+| max \|z\| over full orbit | 19,426.7 km |
+| Period | 3.394396 DU-time = **14.74 days** |
+| Full-period closure (generic propagator) | 1.92e-5 km position, 1.24e-7 m/s velocity |
+| Jacobi drift over one period | 4.06e-12 (nondimensional) |
+| Half-period symmetry residual | ~1e-12 to 1e-14 (round-off level) |
+| Monodromy dominant eigenvalue | 999.5 → linearly **unstable** (expected; not a stationkeeping result) |
+
+![M3 corrected Earth-Moon L2 halo orbit](figures/m3_fig1_halo_orbit_3d.png)
+
+*Numerically differential-corrected periodic orbit (southern-convention,
+`z0>0`); not an ephemeris trajectory. See DESIGN.md for the x-y/x-z/y-z
+projections and the convergence/Jacobi verification figures.*
+
 ## Preliminary insertion-Δv expectation (**M1, not yet computed — a regression bound only**)
 
 Two independent M1 hand estimates (literature order-of-magnitude +
@@ -131,8 +162,8 @@ Illustrative only — no propulsion architecture is finalized.
 |---|---|
 | **M1 ✅** | Mission definition, CR3BP derivation, L2 calculation, insertion-Δv definition, hand estimates |
 | **M2 ✅** | CR3BP integrator, equilibrium-point solver, Jacobi conservation verification |
-| M3 (next) | Richardson analytical halo seed + differential correction to a periodic orbit |
-| M4 | Arrival-state model + insertion-point Δv calculation + sensitivity study |
+| **M3 ✅** | Linearized halo seed + STM-based differential correction to a genuine periodic L2 halo orbit |
+| M4 (next) | Arrival-state model + insertion-point Δv calculation + sensitivity study |
 | M5 | Trade study: halo size, insertion point, transfer geometry, propellant implications |
 | M6 | Independent validation, convergence study, final figures, portfolio packaging |
 
@@ -152,22 +183,29 @@ pip install -e ".[dev]"
 pytest -W error
 ```
 
-85 tests pass as of M2: constants/normalization round-trips, CR3BP
-potential/gradient/RHS validation (including an independent from-scratch
-acceleration cross-check and symmetry checks), L1/L2/L3 equilibrium
-residuals, Jacobi-constant identities, and propagation/convergence
-checks. No halo-specific tests exist yet — those begin at M3.
+126 tests pass as of M3: everything from M2 (constants/normalization
+round-trips, CR3BP potential/gradient/RHS validation, L1/L2/L3
+equilibrium residuals, Jacobi-constant identities, propagation/
+convergence checks), plus M3's variational-equations/STM tests, halo
+seed tests, differential-correction tests, and full-orbit periodicity/
+symmetry/monodromy verification tests. No manifold/arrival/insertion
+tests exist yet — those begin at M4.
 
 ## Repository layout
 
 ```
-DESIGN.md                    full derivations, equations, assumptions
-README.md                    this file
-src/halo_insertion/          package: constants, normalization, CR3BP
-                              dynamics, equilibria, propagation (M2)
-tests/                       pytest suite (85 tests as of M2)
-scripts/make_m2_figures.py   generates the M2 diagnostic figures
-figures/                     M2 diagnostic figures (equilibrium
-                              geometry, verification trajectory/Jacobi)
-results/                     numerical results (empty through M2)
+DESIGN.md                       full derivations, equations, assumptions
+README.md                       this file
+src/halo_insertion/             package: constants, normalization, CR3BP
+                                 dynamics, equilibria, propagation (M2);
+                                 variational/STM, halo seed, differential
+                                 correction, halo orchestration (M3)
+tests/                          pytest suite (126 tests as of M3)
+scripts/make_m2_figures.py      generates the M2 diagnostic figures
+scripts/build_m3_halo.py        builds/corrects/validates the M3 halo orbit,
+                                 writes results/m3_*.{csv,json}
+scripts/make_m3_figures.py      generates the M3 diagnostic figures
+figures/                        M2 + M3 diagnostic figures
+results/                        m3_halo_initial_state.csv, m3_correction_history.csv,
+                                 m3_halo_summary.json
 ```

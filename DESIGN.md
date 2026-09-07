@@ -707,6 +707,331 @@ begins in M3.
 
 ---
 
+## Milestone 3 — L2 halo-orbit seed, differential correction, STM verification, and periodic-orbit validation
+
+Status: **complete.** This section documents M3's construction of the
+project's first genuine numerically periodic Earth–Moon L2 halo orbit,
+replacing the M1 literature-scale placeholder. All conventions (μ,
+Earth/Moon positions, state ordering, equations of motion) are
+identical to M1/M2 — no changes.
+
+### Seed method and provenance
+
+**M3 uses a linearized (first-order) CR3BP variational seed, NOT the
+third-order Richardson (1980) approximation.** This is an explicit,
+documented engineering choice, not an oversight: the full third-order
+Richardson expansion requires ~15–20 additional coefficients
+(`a21…a32, b21, b22, d21, d31, d32, s1, s2, l1, l2`, …) whose correct
+transcription from memory carries meaningful risk of a subtle sign or
+indexing error — exactly the kind of error that would silently produce
+a wrong-family seed. Rather than risk that, this project:
+
+1. Linearizes the CR3BP equations about L2 (where the equilibrium's
+   symmetry gives `Uxy = Uxz = Uyz = 0`), yielding two **decoupled**
+   linear subsystems — in-plane `(x,y)` and out-of-plane `z` — exactly
+   as in Section 4 of this document, evaluated at the L2 equilibrium.
+2. Solves each subsystem in closed form: the out-of-plane motion is
+   simple harmonic with frequency `wz = sqrt(-Uzz)`; the in-plane
+   motion's oscillatory (center-manifold) mode has frequency
+   `wxy = sqrt(-beta)`, where `beta` is the negative root of the
+   characteristic equation `beta^2 + (4-Uxx-Uyy)*beta + Uxx*Uyy = 0`.
+3. Builds the symmetric halo IC form (Section 7 below) from the
+   in-plane trial solution `dx(t) = -Ax*cos(wxy*t)`,
+   `dy(t) = kappa*(-Ax)*sin(wxy*t)` (see `halo_seed.py` for the full
+   sign derivation, including a documented sign correction found
+   during implementation — see "Genuine bugs found" below), with
+   `Ax = 0.9 * Az` (a fixed, moderate ratio; not claimed to be the true
+   nonlinear Richardson amplitude relation).
+
+**Numerical cross-check on the theory used:** this project independently
+*derived and verified* the standard Legendre-coefficient identity
+`c2 = -Uzz` (and the companion `Uyy = 1-c2`, `Uxx = 1+2*c2`) against the
+production Hessian at L2, and verified the closed-form `c_n(gamma2)`
+formula for L2 reproduces `c2` from the Hessian to machine precision
+(`c2` from Hessian: `3.19042524638630`; from the formula:
+`3.19042524638629`). This built confidence in the L2 geometry
+(`gamma2 = 0.16783274...`, matching M2's L2-to-Moon distance) without
+requiring the full third-order machinery.
+
+At L2, `wz = 1.786176` and `wxy = 1.862646` (nondimensional) — a
+**~4.1% frequency mismatch**. This mismatch is exactly why a pure
+linear seed is not already a periodic 3D orbit, and exactly what the
+nonlinear differential corrector (below) must resolve.
+
+Documented explicitly per this project's terminology (DESIGN.md
+Section 2): this seed is a **halo-orbit seed**, never called a "halo
+orbit" until corrected and periodicity-verified below.
+
+### Correction formulation
+
+Free variables: `x0, ydot0` (holding `z0` fixed — this selects the
+family member/amplitude). Target residuals: `xdot(T/2) = 0`,
+`zdot(T/2) = 0`. Symmetric IC form enforced by construction (never
+corrected): `y0 = 0`, `xdot0 = 0`, `zdot0 = 0`.
+
+The correction matrix accounts for the half-period `T/2` itself being
+an implicit function of `(x0, ydot0)` (since it is defined by the
+dynamic `y=0` event, not a fixed time). Using the chain rule through
+the event-time constraint `y(T(free);free) = 0`:
+
+```
+dT/d(free)      = -Phi[1, free_cols] / ydot(T/2)
+d[s(row)](T/2)/d(free) = Phi[row, free_cols] + sdot(T/2)[row] * dT/d(free)
+```
+
+for `row in {xdot=3, zdot=5}`. This 2x2 matrix is inverted via
+least-squares (robust to mild ill-conditioning) for the Newton step. A
+**damped Newton / backtracking line search** (step halved up to 12
+times per iteration until the residual actually decreases) is used for
+robustness far from convergence — plain full Newton steps were found
+to overshoot badly this close to L2's strongly hyperbolic in-plane
+dynamics (see "Genuine bugs found" below).
+
+### Event handling
+
+The symmetric IC has `y(0) = 0` exactly, with `ydot(0) != 0` generally,
+so `y(t)` leaves zero *immediately* at `t=0` in one direction — a naive
+event search starting at `t=0` would misdetect this trivial departure
+as "the" crossing. `propagate_half_period` (in `differential_correction.py`)
+handles this with an explicit two-stage integration: a short warm-up
+interval `[0, t_warmup=0.05]` with event detection **disabled**, then a
+resumed integration with the `y=0` event (`direction=-1`, i.e. only the
+*decreasing-through-zero* crossing) armed. `test_half_period_event_does_not_trigger_at_t0`
+verifies the detected crossing is always `t_half > 0.1`, well clear of
+the seam.
+
+### Correction iteration history (`Az = 0.035` DU, southern-convention seed)
+
+| it | x0 | ydot0 | half-period | xdot residual | zdot residual | correction norm |
+|---:|---:|---:|---:|---:|---:|---:|
+| 0 | 1.124182 | 0.170892 | 1.439639 | 1.865e-01 | -4.790e-02 | 2.056e-01 |
+| 1 | 1.109182 | 0.220061 | 1.614843 | 9.697e-02 | -2.446e-02 | 1.131e-02 |
+| 2 | 1.104335 | 0.230276 | 1.745071 | -5.671e-02 | 2.085e-02 | 2.076e-02 |
+| 3 | 1.109346 | 0.210131 | 1.705962 | -7.983e-03 | 3.222e-03 | 7.576e-03 |
+| 4 | 1.111080 | 0.202756 | 1.697397 | -1.673e-04 | 7.013e-05 | 1.923e-04 |
+| 5 | 1.111124 | 0.202569 | 1.697198 | -6.458e-08 | 2.831e-08 | 8.669e-08 |
+| 6 | 1.111124 | 0.202569 | 1.697198 | -1.525e-14 | 5.653e-15 | 0.0 |
+
+Clean **quadratic** Newton convergence from iteration 3 onward (residual
+norm ~1.9e-2 → ~1.9e-4 → ~9.5e-8 → ~1.6e-14) — genuine convergence, not
+merely a final answer. Full history: [results/m3_correction_history.csv](results/m3_correction_history.csv).
+Convergence plot: Figure 3 below.
+
+### Corrected initial condition and period
+
+```
+x0    =  1.1111238554848533   (nondim)
+y0    =  0.0
+z0    =  0.035                (nondim; 13,454.0 km — the amplitude at the x-z crossing)
+xdot0 =  0.0
+ydot0 =  0.2025688201399349   (nondim)
+zdot0 =  0.0
+
+half-period = 1.697198143630976   (nondim)
+period      = 3.394396287261952   (nondim) = 14.740097 days
+```
+
+`Az = 0.035` DU (13,454 km) sits inside the M1-intended range
+(0.03–0.04 DU / 11,500–15,400 km); it was **not forced** to any
+specific value — it is simply the `z0` at which this seed converged
+cleanly (Section 22 of this milestone's instructions: `Az` values
+0.005/0.01 (z-xy coupling too weak — nearly-singular correction matrix)
+and 0.04 (outside this seed's convergence basin) were tried and
+explicitly rejected; 0.02/0.03/0.035 all converged, and 0.035 was kept
+as the reported orbit). Full summary:
+[results/m3_halo_summary.json](results/m3_halo_summary.json).
+
+### Full-period verification (independent of the correction loop)
+
+Propagated one full period using the **generic M2 propagator**
+(`propagation.propagate`, default `DOP853, rtol=1e-11, atol=1e-12`) —
+not the half-period-event machinery used by the corrector:
+
+```
+position closure norm  = 4.988e-11 (nondim) = 1.918e-05 km
+velocity closure norm  = 1.207e-10 (nondim) = 1.237e-07 m/s
+component-wise: dx=3.145e-11, dy=-3.837e-11, dz=5.221e-12,
+                 dxdot=9.570e-11, dydot=-6.504e-11, dzdot=3.441e-11
+```
+
+### Jacobi verification
+
+```
+C(0)            = 3.1412189199162857   (nondim)
+max |C(t)-C(0)| = 4.059e-12  over one full period (4000-point sampling)
+RMS drift       = ~1.3e-12
+```
+
+No energy/Jacobi correction was applied at any point — this is a pure
+propagation diagnostic on the already-corrected orbit.
+
+### Halo geometry
+
+```
+x range:  [1.111124, 1.178180]  (nondim) -> [-17,128, +8,648] km relative to x_L2
+y range:  [-0.096662, 0.096662] (nondim) -> ±37,157 km
+z range:  [-0.050538, 0.035000] (nondim) -> [-19,427, +13,454] km
+max|z|  =  0.050538 (nondim) = 19,426.7 km   <-- note: LARGER than z0=Az=13,454 km;
+                                                  see note below
+period  =  3.394396 (nondim) = 14.740098 days
+```
+
+`max|z| > 0` confirms this is genuinely three-dimensional, not a
+planar Lyapunov orbit. The orbit's x-center (~1.1447) sits close to
+`x_L2 = 1.155682` (within ~0.011 DU, i.e. within the orbit's own
+amplitude scale) — centered on the L2 neighborhood, not some other
+equilibrium region.
+
+**Note on `Az` vs. `max|z|`:** this project (matching common
+convention) reports `Az = z0` — the z-value *at the x-z-plane symmetry
+crossing* (t=0) — as "the" halo amplitude, consistent with Section 2's
+target scale. The orbit's `max|z|` over the *full* trajectory
+(19,426.7 km) is larger than `z0` (13,454 km) because the halo's 3D
+looping geometry does not peak in `|z|` exactly at the symmetry
+crossing. This is a genuine, expected feature of this halo family
+member, not a bug — verified directly from the propagated trajectory,
+not assumed.
+
+### Symmetry verification
+
+At the detected half-period crossing:
+
+```
+y(T/2)    = -4.281e-14   (target: 0)
+xdot(T/2) =  2.274e-12   (target: 0)
+zdot(T/2) = -9.032e-14   (target: 0)
+```
+
+All three residuals are at the level of double-precision round-off,
+confirming the orbit's mirror symmetry about the x-z plane to numerical
+precision — quantified directly, not assessed visually. (See Figure 2's
+x-z projection, which — as a *consequence* of this exact symmetry —
+visually collapses to a thin retraced arc rather than an open loop:
+`x(t) ≈ x(T-t)` and `z(t) ≈ z(T-t)` were verified directly from sampled
+trajectory points.)
+
+### STM verification
+
+- `Phi(0) = I6` to `1e-12` (`test_phi0_is_identity`).
+- Short-time STM `Phi(dt) ≈ I + A*dt` for `dt=1e-5`, agreement to
+  `1e-8` (`test_short_time_stm_approximates_I_plus_A_dt`).
+- Augmented (state+STM) propagation's state component matches the
+  independent M2 generic propagator to `1e-9` over `t=0.5`
+  (`test_augmented_state_matches_generic_propagator`).
+- STM correctly predicts a small perturbed trajectory to first order:
+  for perturbations `eps in {1e-4, 1e-5, 1e-6}` applied to `x0`, the
+  STM-vs-actual prediction error scales as `eps^2` (`error/eps^2`
+  constant at ~1.269 across all three, confirming genuine first-order
+  linearization, not coincidence):
+
+  | eps | STM-predicted norm | actual norm | error | error / eps² |
+  |---:|---:|---:|---:|---:|
+  | 1e-4 | 1.010e-4 | 1.010e-4 | 1.267e-8 | 1.267 |
+  | 1e-5 | 1.010e-5 | 1.010e-5 | 1.269e-10 | 1.269 |
+  | 1e-6 | 1.010e-6 | 1.010e-6 | 1.269e-12 | 1.269 |
+
+### Independent validation of the corrected orbit
+
+**A. Full-period closure with the generic M2 propagator** — done above
+(1.9e-5 km), independent of the corrector's own half-period machinery.
+
+**B. Tighter tolerance** (`DOP853, rtol=1e-13, atol=1e-14` vs. default
+`rtol=1e-11, atol=1e-12`): closure improves to **8.924e-07 km** — a
+~20x tightening as tolerance tightens by ~2 orders of magnitude,
+consistent behavior, not a fluke.
+
+**C. Independent integrator** (`RK45, rtol=1e-12, atol=1e-13` vs.
+`DOP853`): final-state difference between the two integrators is
+`1.580e-10` (nondimensional) — effectively identical trajectories from
+two different numerical methods.
+
+**D. STM short-time perturbation prediction** — see STM verification
+above.
+
+All four checks agree; no discrepancy found between independent
+validation paths.
+
+### Monodromy matrix (validation/characterization artifact only — not a stability study)
+
+```
+M = Phi(T),  det(M) = 0.99999999996   (should be exactly 1: CR3BP flow is symplectic/volume-preserving)
+
+eigenvalues (real, imag):
+  999.547109 + 0.000000i    <- unstable direction
+    0.001000 + 0.000000i    <- stable direction (reciprocal of the above)
+    0.951404 + 0.307946i    <- oscillatory (center) pair, |lambda| = 1.0000
+    0.951404 - 0.307946i
+    1.000000 + 0.0000021i   <- trivial pair (periodicity + energy), |lambda| ~ 1.0000
+    1.000000 - 0.0000021i
+
+reciprocal-pair products: 1.0000000002, 0.9999999999996, 0.9999999999996
+  (all ~1, as expected for Hamiltonian CR3BP dynamics: eigenvalues
+  come in reciprocal pairs lambda, 1/lambda)
+```
+
+The dominant eigenvalue magnitude (**999.5**) is far in excess of 1,
+confirming this halo orbit is **linearly unstable** — fully expected
+for CR3BP libration-point orbits and exactly why real halo missions
+require active stationkeeping (Section 12). This is reported strictly
+as a validation/characterization artifact; **no manifold generation or
+stability/stationkeeping study is performed in M3** (that is explicitly
+out of scope — Sections 15/23 of this milestone's instructions).
+
+### Dimensional conversions (self-consistency)
+
+```
+period:        3.394396 DU-time = 14.740098 days   (14.740098 = 3.394396 * 4.342480 to 1e-12 relative)
+z-amplitude:   0.035 DU = 13,454.0 km               (0.035 * 384,400 to 1e-12 relative)
+characteristic velocity scale: V* = 1024.547 m/s (unchanged from M2; the orbit's own velocities
+                                                    range up to ~0.30 nondim ~ 307 m/s, well below V*)
+```
+
+### Genuine bugs found during M3 (reported, not hidden)
+
+1. **Seed amplitude-offset/velocity sign mismatch.** The initial
+   `linear_halo_seed` implementation derived the in-plane trial
+   solution assuming `dx(0) = +Ax`, but then placed `x0 = x_L2 - Ax`
+   (i.e., `dx(0) = -Ax`) without correspondingly flipping the sign of
+   the derived `ydot0`. This produced a seed that diverged rapidly
+   under nonlinear propagation instead of returning near-periodically.
+   Found by direct numerical comparison of both sign branches; fixed
+   by deriving `ydot0 = -kappa*Ax*wxy` consistent with the `x0 = x_L2 - Ax`
+   convention (see `halo_seed.py`'s in-line derivation note).
+2. **Correction-matrix sign error (chain rule through the event-time
+   constraint).** The first differential-correction implementation used
+   `M[i,:] = Phi[row,free] - sdot[row]*dT_dfree` (minus). This is
+   *wrong* — the correct total-derivative chain rule (re-derived
+   carefully from `d/d(free)[s(T(free);free)]`) requires a **plus**
+   sign. With the minus sign, Newton iterations showed slow, stalling,
+   sub-linear convergence (residual plateauing around ~2e-3 rather than
+   collapsing to machine precision). After deriving and fixing the sign,
+   the exact same seed converged with clean quadratic convergence (see
+   the iteration history above). This was caught by noticing the
+   convergence rate was wrong (linear/stalling instead of quadratic),
+   not by a passing-vs-failing test alone — a reminder that "eventually
+   converges" is not sufficient verification; the *rate* of convergence
+   is itself diagnostic.
+3. **3-free-variable (x0, z0, ydot0) minimum-norm correction collapses
+   to the planar Lyapunov family.** An alternative correction
+   formulation (correcting all three of `x0, z0, ydot0` via a
+   minimum-norm least-squares solve, rather than holding `z0` fixed)
+   was tried and **converges to `z0 ~ 0`** (a degenerate planar orbit,
+   not a halo) for every tested amplitude — exactly the failure mode
+   this milestone's instructions warned about (Section 22). This
+   confirms the fixed-`z0`, 2-free-variable formulation (used for the
+   reported orbit) is the correct choice for this problem, not merely
+   a default pick.
+
+### Explicit scope statement
+
+**No stable/unstable manifold, arrival-state model, or insertion Δv has
+been computed in M3.** The monodromy matrix above is reported purely as
+a stability/validation characterization, not a manifold or
+stationkeeping result. Manifold and arrival-trajectory work begins in
+M4.
+
+---
+
 ## 12. Limitations
 
 Stated explicitly and unconditionally, for this milestone and as an

@@ -1,0 +1,122 @@
+{
+  "mu": 0.012150583916324809,
+  "x_L2": 1.1556821589323059,
+  "seed_method": "linearized (first-order) CR3BP variational solution about L2, NOT third-order Richardson",
+  "Az_target_nondim": 0.035,
+  "z_sign_convention": 1.0,
+  "corrected_initial_state": {
+    "x0": 1.1111238554848533,
+    "y0": 0.0,
+    "z0": 0.035,
+    "xdot0": 0.0,
+    "ydot0": 0.20256882013993485,
+    "zdot0": 0.0
+  },
+  "half_period_nondim": 1.697198143630976,
+  "period_nondim": 3.394396287261952,
+  "period_days": 14.74009747971348,
+  "correction_iterations": 7,
+  "correction_converged": true,
+  "jacobi_C0": 3.1412189199162857,
+  "jacobi_max_drift": 4.058531288819722e-12,
+  "jacobi_rms_drift": 8.585869948867427e-13,
+  "geometry": {
+    "x_min_nondim": 1.1111238554848533,
+    "x_max_nondim": 1.1781805055917398,
+    "y_min_nondim": -0.09666249504553598,
+    "y_max_nondim": 0.09666249503984721,
+    "z_min_nondim": -0.05053775224222063,
+    "z_max_nondim": 0.03500000000522141,
+    "max_abs_z_nondim": 0.05053775224222063,
+    "max_abs_z_km": 19426.711961909612,
+    "z0_amplitude_km": 13454.000000000002,
+    "x_extent_from_L2_km": [
+      -17128.211845200778,
+      8648.364455886413
+    ],
+    "y_extent_km": [
+      -37157.06309550403,
+      37157.063093317265
+    ]
+  },
+  "full_period_closure_generic_propagator": {
+    "position_norm_nondim": 4.988347331090244e-11,
+    "position_norm_km": 1.9175207140710897e-05,
+    "velocity_norm_nondim": 1.2071327552820877e-10,
+    "velocity_norm_m_s": 1.236764068283011e-07,
+    "component_wise": {
+      "dx": 3.1450841930791285e-11,
+      "dy": -3.8365901059399243e-11,
+      "dz": 5.221406640387727e-12,
+      "dxdot": 9.569508657307534e-11,
+      "dydot": -6.503683702696605e-11,
+      "dzdot": 3.441446097280504e-11
+    }
+  },
+  "independent_validation": {
+    "tighter_tolerance_closure_km": 8.924332656099627e-07,
+    "tighter_tolerance_settings": {
+      "method": "DOP853",
+      "rtol": 1e-13,
+      "atol": 1e-14
+    },
+    "rk45_vs_dop853_final_state_diff_nondim": 1.5798371819019477e-10,
+    "stm_short_time_prediction": [
+      {
+        "eps": 0.0001,
+        "error": 1.2674717053421357e-08,
+        "error_over_eps_sq": 1.2674717053421356
+      },
+      {
+        "eps": 1e-05,
+        "error": 1.2685549375266476e-10,
+        "error_over_eps_sq": 1.2685549375266474
+      },
+      {
+        "eps": 1e-06,
+        "error": 1.2685665084814955e-12,
+        "error_over_eps_sq": 1.2685665084814954
+      }
+    ]
+  },
+  "symmetry_residual": {
+    "y_at_half_period": -4.2809505940155645e-14,
+    "xdot_at_half_period": 2.274389010459288e-12,
+    "zdot_at_half_period": -9.032097986194643e-14
+  },
+  "monodromy": {
+    "determinant_real": 0.9999999999584466,
+    "determinant_imag": 0.0,
+    "eigenvalues_real": [
+      999.5471085744468,
+      0.0010004530968030535,
+      0.9514038310488511,
+      0.9514038310488511,
+      0.9999999999974796,
+      0.9999999999974796
+    ],
+    "eigenvalues_imag": [
+      0.0,
+      0.0,
+      0.3079460184277757,
+      -0.3079460184277757,
+      2.07854137098566e-06,
+      -2.07854137098566e-06
+    ],
+    "eigenvalue_magnitudes": [
+      999.5471085744468,
+      0.0010004530968030535,
+      0.9999999999999754,
+      0.9999999999999754,
+      0.9999999999996396,
+      0.9999999999996396
+    ],
+    "reciprocal_pair_products": [
+      1.0000000001738434,
+      0.999999999999615,
+      0.999999999999615
+    ],
+    "max_eigenvalue_magnitude": 999.5471085744468,
+    "linearly_unstable": true
+  }
+}
