@@ -44,7 +44,6 @@ C. **Direction sweep** — model B's direction rotated by a signed angle
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass
 
 import numpy as np
 

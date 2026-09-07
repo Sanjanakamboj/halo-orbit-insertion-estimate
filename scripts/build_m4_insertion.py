@@ -13,9 +13,8 @@ import math
 import numpy as np
 
 from halo_insertion import constants as c
-from halo_insertion.arrival import direction_aligned_with_halo, jacobi_from_state
+from halo_insertion.arrival import jacobi_from_state
 from halo_insertion.cr3bp import jacobi_constant
-from halo_insertion.equilibria import find_L2
 from halo_insertion.insertion import evaluate_insertion_at_phase, halo_state_at_phase, phase_sweep, refine_best_phase
 from halo_insertion.propagation import PropagationSettings, propagate
 
@@ -57,7 +56,6 @@ def _propellant(delta_v_m_s, m0, isp, g0):
 
 def main():
     state0, period, m3_summary = _load_m3()
-    l2 = find_L2(MU)
 
     # === Baseline (theta=0) dense phase sweep ===
     candidates = phase_sweep(state0, period, MU, DC_BASELINE, n_points=N_SWEEP)

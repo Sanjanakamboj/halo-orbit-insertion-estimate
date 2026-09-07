@@ -12,7 +12,6 @@ import json
 
 import matplotlib.pyplot as plt
 import numpy as np
-from mpl_toolkits.mplot3d import Axes3D  # noqa: F401
 
 from halo_insertion import constants as c
 from halo_insertion.cr3bp import jacobi_constant

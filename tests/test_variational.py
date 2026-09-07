@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 
 from halo_insertion import constants as c
-from halo_insertion.cr3bp import cr3bp_rhs, effective_potential_gradient
+from halo_insertion.cr3bp import effective_potential_gradient
 from halo_insertion.equilibria import find_L2
 from halo_insertion.propagation import propagate
 from halo_insertion.variational import augmented_rhs, omega_hessian, propagate_with_stm, state_jacobian_A

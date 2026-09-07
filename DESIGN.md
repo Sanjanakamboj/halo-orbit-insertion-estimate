@@ -1,10 +1,32 @@
 # DESIGN — Earth–Moon L2 Halo-Orbit Insertion Δv Estimate
 
-Status: **Milestone 1 (M1) — mission definition, governing equations, L2
-location, insertion-Δv definition, hand estimates, and repository
-scaffolding only.** No CR3BP propagator, halo differential correction,
-manifold targeting, or insertion solver is implemented yet (see
-[Section 10](#10-later-milestone-plan)).
+Status: **Milestone 6 (M6) — FINAL. All technical milestones (M1–M5)
+complete; M6 is audit, reproducibility verification, CI, and portfolio
+packaging only — no new trajectory physics.**
+
+**Final result: ≈110 m/s (109.5723 m/s) Earth–Moon L2 halo-insertion
+Δv**, for the explicitly modeled Jacobi-offset/radial-from-Earth
+arrival family (M4), confirmed to round-trip numerical precision by a
+dynamically propagated CR3BP validation arc (M5). See the [M4](#milestone-4--arrival-state-definition-insertion-point-trade-and-halo-insertion-δv-estimate)
+and [M5](#milestone-5--transfer-arrival-validation-assumption-robustness-and-final-insertion-estimate)
+sections for the full derivation, and [README.md](README.md) for the
+portfolio-facing summary.
+
+### Milestone status / supersession map
+
+This document preserves the full history of every milestone's
+reasoning and results — nothing below is erased — but the numbers
+that matter for the final answer are only ever those of the
+**latest** milestone that superseded them:
+
+| Milestone | Role | Status |
+|---|---|---|
+| **M1** | Mission framing, hand-derived CR3BP constants, insertion-Δv *definition*, order-of-magnitude Δv scale (10–200 m/s) | **Preliminary/historical.** Superseded quantitatively by M4/M5 for the Δv value; the *definition* of insertion Δv (§7) and the mission scenario (§1) remain authoritative and unchanged throughout. |
+| **M2** | Verified generic CR3BP dynamics (equations of motion, Jacobi constant, L1/L2/L3, propagator) | **Authoritative and unchanged.** All later milestones build on this code without modification. |
+| **M3** | Numerically differential-corrected periodic Earth–Moon L2 halo orbit | **First authoritative periodic halo orbit**, used unmodified by M4 and M5. Explicitly supersedes M1's literature-scale halo placeholder (§2). |
+| **M4** | Local arrival-state model + insertion-phase trade → Δv ≈ 109.572 m/s | **Local estimate — validated dynamically in M5**, not superseded (M5 reproduces it, does not replace it). |
+| **M5** | Dynamically propagated CR3BP arrival-arc validation of M4 | **Final technical insertion estimate at this project's CR3BP fidelity.** Confirms M4 to round-trip precision and additionally shows M4's secondary local minimum does not survive dynamical screening. |
+| **M6** | Audit, reproducibility, CI, packaging | **Final.** No numerical results changed from M5 except where this audit found and fixed genuine documentation-staleness issues (see M6 section). |
 
 ---
 
@@ -1563,6 +1585,173 @@ propagated CR3BP arrival arcs. It still does not optimize the complete
 Earth-to-L2 transfer from launch/TLI conditions.** M6 remains a
 packaging/final-audit milestone, not a mission-design milestone; the
 repository is not "portfolio-ready" until that pass is complete.
+
+---
+
+## Milestone 6 — Final technical audit, reproducibility, CI, and portfolio packaging
+
+Status: **complete. This is the final milestone.** No new trajectory
+physics was added; this section documents the audit itself.
+
+### Pre-flight verification
+
+Confirmed before any change: clean working tree, branch `main`, HEAD
+exactly matched the expected M5 commit (`7bfc63b9e2886ed3ae6a4b16715802e3c8382317`),
+local HEAD == `origin/main`, repository public, 168/168 tests passing
+with zero warnings under `pytest -W error`, M1→M5 git history linear
+and untouched.
+
+### Independent re-audit of headline numbers
+
+Every number below was **recomputed from production code**, not
+copied from an earlier draft:
+
+| Quantity | Recomputed value | Matches committed result |
+|---|---:|:---:|
+| `mu` | 0.012150583916324809 | ✅ |
+| `DU` | 384,400 km | ✅ |
+| `TU` | 4.342479849812527 days | ✅ |
+| `V*` | 1024.5468552412854 m/s | ✅ |
+| `x_L2` | 1.1556821589323059 | ✅ |
+| L2 distance from Moon | 64,514.906 km | ✅ |
+| M3 period | 14.74009747971348 days | ✅ |
+| M3 Jacobi `C_halo` | 3.1412189199162857 | ✅ |
+| M3 full-period closure | 1.918×10⁻⁵ km pos / 1.237×10⁻⁷ m/s vel | ✅ |
+| M4 selected `tau` | 0.24413043101153073 | ✅ |
+| M4 Δv | 109.57233088725141 m/s | ✅ |
+| `Delta_v_nd * V*` == `Delta_v_m_s` | exact | ✅ (Independent check A) |
+| M4 propellant (320s / 450s) | 205.88350 kg / 147.14261 kg | ✅ |
+| M5 backward duration | 10 days | ✅ |
+| M5 min Earth distance | 0.402716942752057 DU (< 0.8 DU threshold) | ✅ |
+| M5 min Moon distance | 18,171.562 km (> 8,687 km guard) | ✅ |
+| M5 Δv | 109.57233088250732 m/s | ✅ |
+| M4-vs-M5 difference | 4.744×10⁻⁹ m/s (4.330×10⁻⁹ %) | ✅ |
+
+**Final independent sanity checks (Section 20 of this milestone's instructions):**
+
+| Check | Result |
+|---|---:|
+| A. `Delta_v_nd * V* == Delta_v_m_s` | exact |
+| B. Rocket-equation propellant recomputation | exact match to committed values |
+| C. M4 selected phase lies on the corrected M3 orbit | position match, diff = 0.0 |
+| D. M5 selected phase matches M4 | `tau4 - tau5 = 6.613e-09` |
+| E. Primary branch meets both screening criteria | Earthward ✅, Moon guard ✅ |
+| F. Secondary branch (`tau=0.781`) fails the Earthward criterion | `min r_E = 0.9594 DU >> 0.8 DU` threshold, confirmed |
+| G. M5 backward→forward round trip closes | 2.645×10⁻⁶ km pos, 1.879×10⁻⁸ m/s vel |
+| H. M3 full-period propagation closes | `1.306e-10` (nondim state-vector norm) |
+| I. Jacobi conserved on unforced trajectories | M3 orbit: max drift `4.044e-12` |
+| J. No impulsive burn accidentally included in a conservation check | confirmed — `C_halo != C_arr` at the burn (0.01 nondim jump, exactly `dC_baseline`), while every *unforced*-propagation check (M3 full orbit, M5 backward arc) shows Jacobi conserved to 10⁻¹¹–10⁻¹² |
+
+No discrepancy found anywhere in this re-audit.
+
+### Interpretation audit (M5)
+
+Confirmed the project's language does not overclaim M5: grepped
+`DESIGN.md` and `README.md` for "optimized transfer," "Earth transfer,"
+"launch-to-halo," and "mission-optimal" — every occurrence found is a
+negation (stating what M5 is *not*), never an affirmative claim. The
+preferred wording from this milestone's own instructions —
+*"M5 validates the local insertion state by embedding it in a
+dynamically consistent CR3BP ballistic arrival arc that reaches the
+predefined Earthward region"* — is now used verbatim in README.md's M5
+section.
+
+### Code-quality audit
+
+`pyflakes src tests scripts` found 8 genuine hygiene issues (unused
+imports/variables — no dead logic, no unreachable code): an unused
+`dataclass` import in `arrival.py`, an unused `math` import in
+`test_normalization.py`, an unused `cr3bp_rhs` import in
+`test_variational.py`, an unused `Axes3D` import in
+`make_m3_figures.py` (genuinely unnecessary as of matplotlib 3.2+,
+which auto-registers the 3D projection), an unused `propagate` import
+and an unused `m4_summary` variable in `build_m5_validation.py`
+(fixed by deriving the M4 baseline from the loaded summary instead of
+duplicating it as hardcoded constants — removing both the lint warning
+and a staleness risk), and an unused `direction_aligned_with_halo`
+import and an unused `l2` variable in `build_m4_insertion.py`. All
+fixed; `pyflakes src tests scripts` is now clean. **No numerical
+results changed** — M3/M4/M5 result artifacts were regenerated and
+diffed byte-identical before and after every fix.
+
+### Documentation staleness found and fixed
+
+The single genuine staleness issue found: this file's top-of-document
+status banner still read "Milestone 1 (M1)" after five further
+milestones of work. Fixed with the milestone-status/supersession table
+now at the top of this document. No numerical or technical claim was
+found to be stale or self-contradictory elsewhere in `DESIGN.md` or
+`README.md`.
+
+### Dependency audit
+
+Runtime dependencies (`numpy`, `scipy`) and the `figures`
+(`matplotlib`) / `dev` (`pytest`) extras were checked against actual
+imports across `src/`, `scripts/`, and `tests/` — every declared
+dependency is genuinely used, and every import is covered by a
+declared dependency. No unnecessary packages. Package version bumped
+`0.1.0 -> 1.0.0` in `pyproject.toml` (previously out of sync with
+`halo_insertion.__version__`, itself bumped to `1.0.0` here to mark
+the final milestone).
+
+### Fresh-environment reproducibility
+
+A genuinely fresh virtual environment (`python3 -m venv`, no cached
+wheels, no reuse of any environment from earlier milestones) was used
+to: install the package (`pip install -e ".[dev,figures]"`); run
+`pytest -W error` (168/168 passed); regenerate M3, M4, and M5 results
+(`scripts/build_m{3,4,5}_*.py`); and regenerate all eleven figures
+(`scripts/make_m{2,3,4,5}_figures.py`). Every regenerated
+`results/*.json` file was diffed against the committed version:
+**byte-identical**. Every regenerated figure PNG was also diffed
+against the committed version and found byte-identical in this
+environment (same OS/matplotlib version) — this is stronger than the
+numerical-reproducibility guarantee this project actually makes;
+across different matplotlib/OS versions, figure *rendering* could
+differ at the byte level even though the underlying *numerical data*
+would not, and this document distinguishes the two rather than
+overclaiming pixel-perfect cross-platform reproducibility.
+
+### CI
+
+Added `.github/workflows/ci.yml`: runs `pytest -W error` on Python
+3.11 and 3.12, triggered on `push` and `pull_request`. Installs only
+the `dev` extra (matplotlib is not required by any test, verified by
+grepping `tests/` for `matplotlib` imports — none found), keeping CI
+runtime modest; the expensive M3/M4/M5 production searches are not run
+in CI, consistent with this milestone's instructions.
+
+### LICENSE
+
+Added `LICENSE` (MIT), using the author name already established in
+`pyproject.toml` (`Sanjana Kamboj`) — not an invented legal name.
+
+### Final result hierarchy (restated for this document's own record)
+
+- **Authoritative corrected halo orbit:** M3.
+- **Local insertion estimate:** M4, ≈109.572 m/s.
+- **Dynamically propagated validation:** M5, ≈109.572 m/s for the
+  selected accepted arrival branch (same value to round-trip
+  precision).
+- **Final recommended engineering value: ≈110 m/s** halo-insertion Δv,
+  for the explicitly modeled Jacobi-offset/radial-from-Earth arrival
+  family — never presented as a universal Earth–Moon L2 insertion
+  requirement.
+- **Preliminary/historical:** M1's tens-to-low-hundreds-of-m/s hand
+  estimate — not an independent final answer, superseded quantitatively
+  by M4/M5.
+
+### Genuine remaining weakness (stated prominently, not buried)
+
+The far end of the M5 backward-propagated arrival arc is only required
+to reach a **predefined Earthward CR3BP screening region**
+(`< 0.8 DU`, an engineering threshold, not a physical Earth-departure
+boundary). It is **not** connected to a launch state, a parking orbit,
+a TLI maneuver, or a real ephemeris transfer. This project therefore
+estimates halo-insertion Δv for a dynamically consistent arrival
+family — it does not solve the complete Earth-to-L2 mission transfer.
+This is the project's most significant scope boundary and is repeated
+in README.md's Limitations section rather than left implicit.
 
 ---
 

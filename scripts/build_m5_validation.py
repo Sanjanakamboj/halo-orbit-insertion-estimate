@@ -21,7 +21,7 @@ from halo_insertion.arrival_arc import (
 )
 from halo_insertion.cr3bp import jacobi_constant
 from halo_insertion.insertion import evaluate_insertion_at_phase, halo_state_at_phase
-from halo_insertion.propagation import PropagationSettings, propagate
+from halo_insertion.propagation import PropagationSettings
 
 MU = c.MU
 DC_BASELINE = 0.01  # unchanged from M4
@@ -29,9 +29,6 @@ T_BACK_STAGE_A_DAYS = 10.0  # representative backward duration for Stage A phase
 M0_KG = 6000.0
 ISP_VALUES = [320.0, 450.0]
 G0 = 9.80665
-
-M4_TAU = 0.24413043101153073
-M4_DV_M_S = 109.57233088725141
 
 
 def _load_m3():
@@ -55,6 +52,11 @@ def _propellant(delta_v_m_s, m0, isp, g0):
 def main():
     state0, period, m3_summary = _load_m3()
     m4_summary = _load_m4()
+    # M4's baseline is read from the committed M4 result artifact
+    # (never hardcoded/duplicated here) so this script cannot drift
+    # out of sync with M4's actual selected result.
+    M4_TAU = m4_summary["selected_insertion"]["tau"]
+    M4_DV_M_S = m4_summary["selected_insertion"]["delta_v_m_s"]
 
     # === Stage A: coarse phase discovery ===
     # Fixed dC/direction at the M4 baseline; sweep phase across the full

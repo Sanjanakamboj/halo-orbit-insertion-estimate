@@ -6,10 +6,12 @@ as of M3, the variational-equations/STM machinery and a halo seed +
 differential corrector + one verified periodic orbit also exist; as of
 M4, an arrival-state model and insertion phase-sweep/refinement also
 exist; as of M5, dynamically propagated backward arrival arcs and
-round-trip verification also exist. This module's "nothing exists yet"
-guard is scoped to what remains M6+ only (manifolds, transfer
-optimization, TLI, stationkeeping). Dynamics- and halo-specific tests
-live in the other test_*.py modules.
+round-trip verification also exist. M6 is the final milestone (audit,
+reproducibility, CI, portfolio packaging) and adds no new trajectory-
+physics API. This module's "nothing exists" guard is scoped to
+functionality intentionally out of scope for the whole project
+(manifold design, transfer optimization, TLI, stationkeeping).
+Dynamics- and halo-specific tests live in the other test_*.py modules.
 """
 
 import halo_insertion as hi
@@ -27,17 +29,18 @@ def test_version_string_present():
     assert all(p.isdigit() for p in parts)
 
 
-def test_m1_through_m5_milestones_recorded():
-    for m in ("M1", "M2", "M3", "M4", "M5"):
+def test_m1_through_m6_milestones_recorded():
+    for m in ("M1", "M2", "M3", "M4", "M5", "M6"):
         assert m in hi.IMPLEMENTED_MILESTONES
 
 
-def test_no_m6_solver_falsely_claimed_yet():
-    # M5 must not expose any manifold/transfer-optimization/TLI/
-    # stationkeeping API. This guards against accidentally shipping/
-    # claiming that functionality ahead of M6+.
+def test_out_of_scope_solver_never_claimed():
+    # This project never exposes manifold-design/transfer-optimization/
+    # TLI/stationkeeping API -- that scope boundary is permanent, not
+    # just "not yet". Guards against accidentally shipping/claiming
+    # such functionality.
     for name in ("stable_manifold", "unstable_manifold", "transfer_trajectory_optimizer", "translunar_injection_model"):
-        assert not hasattr(hi, name), f"'{name}' should not exist until a later milestone"
+        assert not hasattr(hi, name), f"'{name}' is out of scope for this project and must not exist"
 
     for name in hi.NOT_YET_IMPLEMENTED:
         assert not hasattr(hi, name), f"'{name}' is listed as not-yet-implemented but exists"

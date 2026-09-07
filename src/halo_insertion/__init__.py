@@ -21,22 +21,30 @@ bounded-scalar refinement over the frozen M3 halo orbit, sensitivity
 studies (arrival speed, arrival direction, local phase), and the
 project's first defensible local halo-insertion Delta-v estimate.
 
-M5 (current): dynamically propagated CR3BP backward arrival arcs used
-to validate M4's local estimate — a staged (coarse phase scan then
+M5: dynamically propagated CR3BP backward arrival arcs used to
+validate M4's local estimate — a staged (coarse phase scan then
 bounded refinement) search with explicit, pre-declared Earthward-reach
 and Moon-clearance acceptance criteria, mandatory backward-forward
 round-trip verification, sensitivity studies, and a real numerical
-convergence study. See DESIGN.md's M5 section for the full search
-domain, acceptance criteria, selected arc, and M4-vs-M5 comparison.
+convergence study. Confirmed M4's ~109.572 m/s estimate to round-trip
+numerical precision, and showed M4's secondary local minimum does NOT
+survive dynamical screening.
 
-**M5 validates the local M4 insertion estimate using dynamically
-propagated CR3BP arrival arcs. It still does not optimize the complete
-Earth-to-L2 transfer from launch/TLI conditions.** No manifold
-generation, launch/TLI, or stationkeeping analysis is implemented. Do
-not import such routines from this module — they do not exist yet.
+M6 (current, final): technical audit, reproducibility verification,
+CI, and portfolio packaging. No new trajectory physics.
+
+**Final project result: an Earth-Moon L2 halo-insertion Delta-v
+estimate of ~109.572 m/s (~110 m/s), for the explicitly modeled
+Jacobi-offset/radial-from-Earth arrival family, confirmed by a
+dynamically propagated CR3BP validation arc. This is a local
+velocity-matching insertion estimate — it does not optimize the
+complete Earth-to-L2 transfer from launch/TLI conditions.** No
+manifold generation, launch/TLI, or stationkeeping analysis is
+implemented. Do not import such routines from this module — they do
+not exist.
 
 See DESIGN.md at the repository root for full derivations, assumptions,
-and the milestone roadmap.
+and the milestone-by-milestone documentation.
 """
 
 from . import constants
@@ -91,11 +99,13 @@ from .normalization import (
 from .propagation import PropagationSettings, propagate
 from .variational import augmented_rhs, omega_hessian, propagate_with_stm, state_jacobian_A
 
-__version__ = "0.5.0"
+__version__ = "1.0.0"
 
 # Milestones implemented so far. Kept as plain data (not behavior) so
-# tests can assert on project status without ambiguity.
-IMPLEMENTED_MILESTONES = ("M1", "M2", "M3", "M4", "M5")
+# tests can assert on project status without ambiguity. M6 is final
+# audit/packaging/CI -- no new trajectory-physics modules -- so it adds
+# no new names to this module's public API.
+IMPLEMENTED_MILESTONES = ("M1", "M2", "M3", "M4", "M5", "M6")
 
 # Explicitly NOT implemented yet (M6+). Listed for clarity/testability,
 # not as a promise of interface — these names are not importable.

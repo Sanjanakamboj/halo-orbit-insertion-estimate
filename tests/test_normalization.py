@@ -1,7 +1,5 @@
 """Tests for M1-constant reproduction and dimensional round-trips."""
 
-import math
-
 import numpy as np
 import pytest
 
