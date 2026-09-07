@@ -1032,6 +1032,278 @@ M4.
 
 ---
 
+## Milestone 4 — Arrival-state definition, insertion-point trade, and halo-insertion Δv estimate
+
+Status: **complete.** This section documents the project's **first
+defensible halo-insertion Δv estimate**. It is a **local
+velocity-matching estimate at the corrected halo orbit under an
+explicit arrival-state assumption — it does not compute or optimize
+the complete Earth-to-L2 transfer trajectory.**
+
+### Why a transfer-arrival assumption is necessary
+
+The M3 corrected halo orbit gives a rotating-frame velocity `v_halo` at
+every point on the orbit. Computing an insertion Δv requires a second
+velocity — the velocity of the incoming transfer trajectory,
+`v_arrival` — at the same position. **No Earth-departure or transfer
+trajectory has been propagated in this project** (that is out of scope
+through at least M4 — see Section 1 and Section 19 below). Without an
+actual integrated transfer, `v_arrival` cannot be known exactly; it
+must be **assumed**, explicitly and transparently. This section defines
+that assumption precisely, so the resulting Δv can be read as
+"Δv under stated assumption X," never as an unconditional number.
+
+**The M3 halo orbit itself is frozen and unmodified** — no
+re-correction, no change to its initial state, period, or convention.
+All M4 work traces phase along the existing periodic orbit.
+
+### Baseline arrival-state model
+
+**Speed — Jacobi-consistent model:**
+
+```
+v_arr^2 = 2*Omega(r_h) - C_arr,   C_arr = C_halo - dC_baseline
+```
+
+with **`dC_baseline = 0.01`** (nondimensional Jacobi units) — a round,
+explicitly documented value, *not* tuned to reproduce any target
+number. `dC_baseline` represents a modest kinetic-energy offset
+consistent with an already-well-targeted transfer (M1 Section 1: "the
+spacecraft arrives on a transfer trajectory already targeted near the
+halo insertion region") that has not yet been velocity-matched to the
+halo. Points where `2*Omega(r_h) - C_arr < 0` are rejected explicitly
+(`ArrivalStateError`), never silently clipped; none occurred for the
+baseline sweep (1000/1000 points valid).
+
+**Direction — Model B, radial-from-Earth (baseline):**
+
+```
+v_arr_dir = (r_h - r_Earth) / |r_h - r_Earth|,   r_Earth = (-mu, 0, 0)
+```
+
+i.e., the arrival velocity points outward along the line from Earth's
+position to the insertion point — modeling a transfer arriving
+generally outbound from the Earth region, **without claiming an actual
+propagated trajectory** ("from Earth" is used here strictly in this
+geometric sense, per this milestone's explicit constraint).
+
+**Direction — Model C, sweep about baseline:**
+
+```
+v_arr_dir(theta) = R_z(theta) @ v_arr_dir_B
+```
+
+a rotation of the baseline direction by signed angle `theta` about the
+synodic z-axis (within the local x-y plane), used for the direction
+sensitivity study below.
+
+**Direction — Model A, aligned with halo velocity (idealized lower
+bound only):**
+
+```
+v_arr_dir = v_halo / |v_halo|
+```
+
+**Explicit degeneracy guard (Section 8 of this milestone's
+instructions):** combined with a free arrival speed, Model A can drive
+Δv to exactly zero — this is *not* presented as a meaningful insertion
+solution anywhere in this project. It is used only as a **fixed-speed
+lower-bound sanity case**: at the selected phase, with the same
+baseline speed assumption, Model A gives `|Δv| = 42.29 m/s` (exactly
+`||v_halo| - |v_arr||`, the pure speed-magnitude mismatch with zero
+direction penalty) — reported explicitly as an idealized bound, plotted
+as a dashed reference line in Figure 1, never as "the" answer.
+
+### Phase parameterization and sweep
+
+`tau = t/T ∈ [0,1)`, sampled densely (`N=1000` for the baseline
+sweep, `tau=1` excluded to avoid duplicating `tau=0` in phase
+statistics — periodicity `tau=0 == tau=1` is separately verified,
+Independent Verification E below). At each `tau`, the M3 initial
+condition is propagated via the **unmodified M2 generic propagator**
+to `t = tau*T`, giving `r_h, v_halo` directly (not via any
+halo-specific shortcut).
+
+### Insertion-point trade: results
+
+1. **Dense sweep** (1000 points, baseline model): **two local minima**
+   found — `tau=0.244` (Δv=109.57 m/s, global) and `tau=0.781`
+   (Δv=224.28 m/s, secondary). Both are reported; the secondary minimum
+   is **not** discarded as noise — it is a genuine consequence of the
+   radial-from-Earth direction model breaking the halo's own y-mirror
+   symmetry (see Figure 1).
+2. **Bounded refinement** (`scipy.optimize.minimize_scalar`, Brent's
+   method, bracket `[tau_grid_min - 0.01, tau_grid_min + 0.01]`,
+   `xatol=1e-10`) around the global grid minimum: **`tau = 0.244130431`**,
+   Δv = **109.57233 m/s** — improves on (never worsens) the grid value
+   of 109.57246 m/s, verified explicitly
+   (`test_optimizer_does_not_worsen_grid_minimum`).
+3. **Direct re-evaluation** of the refined phase reproduces the
+   refined result exactly (`test_direct_selected_point_recomputation_matches`).
+
+### Selected insertion state
+
+```
+tau            = 0.24413043101153073
+t (nondim)     = 0.8286754286332
+t (days from M3 reference crossing) = 3.598506 days
+
+position (nondim):  [ 1.135148,  0.096577, -0.013424]
+v_halo   (nondim):  [ 0.066126, -0.007318, -0.075304]
+v_arr    (nondim):  [ 0.141254,  0.011890, -0.001653]
+Delta_v_vec (nondim): [-0.075128, -0.019209, -0.073651]
+
+|Delta_v| (nondim) = 0.1069471155240105
+|Delta_v| (m/s)    = 109.57233088725141
+
+distance from Moon = 67,902.966 km
+distance from L2    = 38,303.159 km
+```
+
+### Comparison with M1's preliminary scale
+
+M1's Section 7 hand estimate: **O(10¹–10²) m/s (roughly 10–200 m/s)**.
+M4's computed value, **109.57 m/s, falls within this range** — this is
+a genuine outcome of the baseline assumption (`dC=0.01`,
+radial-from-Earth direction), **not tuned to land there**: the
+assumption was chosen (Section above) before checking against M1's
+range, and the resulting number happened to agree. Had it fallen
+outside M1's range, this document would report and explain that
+rather than adjust the assumption (Section 18 of this milestone's
+instructions) — see the speed-sensitivity study below, where several
+`dC` choices (e.g. `dC=0.05` → 199.0 m/s) sit at the upper edge of
+M1's range, illustrating how assumption-dependent this number is.
+
+### Jacobi interpretation
+
+An impulsive burn changes velocity discontinuously at fixed position,
+so the Jacobi constant is **not** conserved across it (M2's Section 5
+already established `C` is only conserved under *unforced* propagation;
+this milestone applies that fact explicitly to the insertion burn):
+
+```
+C_halo = 3.1412189199161844
+C_arr  = 3.1312189199161846
+Delta_C = C_halo - C_arr = 0.009999999999999787  (== dC_baseline, exactly, as designed)
+```
+
+The insertion burn maps the arrival state's `(r_h, v_arr, C_arr)` onto
+the halo state's `(r_h, v_halo, C_halo)` at the same position — a
+discontinuous jump in velocity and Jacobi constant, not a continuous
+transition.
+
+### Sensitivity studies
+
+**A. Arrival-speed sensitivity** (`dC_baseline` varied 0.002 → 0.05,
+minimum Δv re-optimized at each value):
+
+| dC | min Δv (m/s) | optimal tau |
+|---:|---:|---:|
+| 0.002 | 89.55 | 0.2427 |
+| 0.005 | 96.85 | 0.2433 |
+| **0.01 (baseline)** | **109.57** | **0.2441** |
+| 0.02 | 134.51 | 0.2456 |
+| 0.03 | 157.69 | 0.2467 |
+| 0.05 | 198.98 | 0.2485 |
+
+Monotonic and smooth — larger assumed energy offsets produce larger
+Δv and a slowly shifting optimal phase. All 300/300 grid points valid
+at every `dC` tested (no infeasible-Jacobi rejections in this range).
+
+**B. Arrival-direction sensitivity** (`theta` swept ±5°/±10°/±20° about
+the baseline radial-from-Earth direction):
+
+| theta (deg) | min Δv (m/s) | optimal tau |
+|---:|---:|---:|
+| -20 | 100.37 | 0.2792 |
+| -10 | 105.77 | 0.2609 |
+| -5 | 107.86 | 0.2524 |
+| **0 (baseline)** | **109.57** | **0.2441** |
+| +5 | 110.91 | 0.2361 |
+| +10 | 111.87 | 0.2282 |
+| +20 | 112.69 | 0.2124 |
+
+Δv varies only **~12 m/s (≈11%) over a ±20° direction sweep** — a
+**mild** sensitivity to direction assumption, though the *optimal phase*
+shifts more substantially (0.212–0.279), showing direction assumption
+mainly reshapes *where* the minimum sits, more than *how deep* it is.
+This is reported as a genuine finding, not minimized.
+
+**C. Local phase sensitivity around the selected optimum:**
+
+| dtau | Δv (m/s) |
+|---:|---:|
+| -0.05 | 129.18 |
+| -0.02 | 112.77 |
+| -0.01 | 110.37 |
+| -0.005 | 109.77 |
+| **0 (optimum)** | **109.57** |
+| +0.005 | 109.77 |
+| +0.01 | 110.34 |
+| +0.02 | 112.56 |
+| +0.05 | 126.29 |
+
+The minimum is **broad, not razor-thin**: Δv grows only ~2 m/s over
+`dtau=±0.005` (≈±1.7 hours) and ~20 m/s over `dtau=±0.05` (≈±17
+hours). This is a purely deterministic assumption/phase-sensitivity
+result — **not** a navigation-robustness or dispersion analysis
+(Section 10 of this milestone's instructions; no such claim is made
+anywhere in this project).
+
+### Propellant implication (illustrative, `m0 = 6000 kg`)
+
+```
+Delta_v = 109.57233 m/s
+Isp=320s: m_prop = 205.88 kg
+Isp=450s: m_prop = 147.14 kg
+```
+
+Illustrative only, using the same illustrative spacecraft/propulsion
+scale as M1 Section 8. Excludes TLI, MCC, stationkeeping, and launch
+Δv, as throughout this project.
+
+### Independent numerical verification (Section 13 of this milestone's instructions)
+
+| Check | Result |
+|---|---:|
+| A. Generic-M2-propagator recomputation of the selected halo state | exact match (diff = 0.0) |
+| B. Direct vector subtraction `v_halo - v_arrival` vs. stored Δv | exact match (diff = 0.0) |
+| C. Independent dimensional conversion `Δv_nd * V*` vs. stored m/s | exact match (diff = 0.0) |
+| D. Jacobi recomputed from raw state components vs. `cr3bp.jacobi_constant` | exact match (diff = 0.0) |
+| E. Phase periodicity: state at `tau` vs. `tau+1` | diff = 7.22e-17 (round-off) |
+| F. Tighter tolerance (`rtol=1e-13, atol=1e-14`) at the selected phase | diff = 2.88e-13 (nondim) |
+
+No discrepancy found in any independent check.
+
+### Limitations (M4-specific, in addition to Section 12 below)
+
+- The arrival-state model is an **explicit assumption**, not a
+  propagated trajectory; a different (equally defensible) `dC_baseline`
+  or direction model would produce a materially different Δv, as the
+  sensitivity studies above show directly and honestly.
+- "Radial from Earth" is a **geometric** direction rule, not a claim
+  that any Earth-departure trajectory has been computed.
+- The Jacobi-consistent speed model is a simplification; it does not
+  by itself prove any physical transfer with that Jacobi constant
+  actually connects to Earth.
+- The two local minima found are properties of *this* arrival-direction
+  model; a different direction model could shift, merge, or eliminate
+  them.
+- No launch vehicle, TLI, total mission Δv, transfer duration, lunar
+  flyby, manifold transfer, ephemeris feasibility, stationkeeping, or
+  navigation/dispersion analysis is established by this milestone (see
+  Section 12 and this document's M1 Section 12 for the full standing
+  limitations list).
+
+### Explicit scope statement
+
+**M4 computes a local velocity-matching insertion estimate at the
+corrected halo orbit. It does not compute or optimize the complete
+Earth-to-L2 transfer trajectory.** M5 is intended as a stronger
+transfer-arrival/validation milestone, not cosmetic packaging.
+
+---
+
 ## 12. Limitations
 
 Stated explicitly and unconditionally, for this milestone and as an

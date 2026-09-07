@@ -1,0 +1,233 @@
+{
+  "m3_halo_reference": {
+    "corrected_initial_state": {
+      "x0": 1.1111238554848533,
+      "y0": 0.0,
+      "z0": 0.035,
+      "xdot0": 0.0,
+      "ydot0": 0.20256882013993485,
+      "zdot0": 0.0
+    },
+    "period_nondim": 3.394396287261952,
+    "period_days": 14.74009747971348,
+    "jacobi_C0": 3.1412189199162857
+  },
+  "arrival_model": {
+    "description": "Jacobi-consistent speed (v_arr^2 = 2*Omega(r_h) - C_arr, C_arr = C_halo - dC_baseline); baseline direction = radial from Earth (-mu,0,0) to r_h, optionally rotated by theta about the synodic z-axis.",
+    "dC_baseline": 0.01,
+    "direction_baseline": "radial_from_earth"
+  },
+  "phase_sweep": {
+    "n_points": 1000,
+    "n_valid": 1000,
+    "grid_min_delta_v_m_s": 109.57246404021757,
+    "grid_min_tau": 0.244,
+    "local_minima": [
+      {
+        "tau": 0.244,
+        "delta_v_m_s": 109.57246404021757
+      },
+      {
+        "tau": 0.781,
+        "delta_v_m_s": 224.27727581773502
+      }
+    ]
+  },
+  "selected_insertion": {
+    "tau": 0.24413043101153073,
+    "t_nondim": 0.8286754286332,
+    "t_days": 3.5985063508744295,
+    "position_nondim": [
+      1.135147649393297,
+      0.09657667657698504,
+      -0.013424187070018885
+    ],
+    "v_halo_nondim": [
+      0.06612635893038546,
+      -0.007318275224855918,
+      -0.07530387619679009
+    ],
+    "v_arr_nondim": [
+      0.14125442293877355,
+      0.011890441668225817,
+      -0.0016527749655184274
+    ],
+    "delta_v_vec_nondim": [
+      -0.07512806400838809,
+      -0.019208716893081734,
+      -0.07365110123127167
+    ],
+    "delta_v_nondim": 0.1069471155240105,
+    "delta_v_m_s": 109.57233088725141,
+    "C_halo": 3.1412189199161844,
+    "C_arr": 3.1312189199161846,
+    "delta_C": 0.009999999999999787,
+    "dist_from_moon_km": 67902.96555442603,
+    "dist_from_l2_km": 38303.15862113706
+  },
+  "degeneracy_guard_aligned_case": {
+    "description": "IDEALIZED lower bound only (direction exactly aligned with v_halo): not a physically meaningful insertion solution -- see DESIGN.md Section 8.",
+    "delta_v_m_s": 42.293463743789786,
+    "tau": 0.24413043101153073
+  },
+  "sensitivity": {
+    "arrival_speed_dC": [
+      {
+        "dC": 0.002,
+        "min_delta_v_m_s": 89.54700281427033,
+        "tau": 0.24267800602226072,
+        "n_valid": 300,
+        "n_total": 300
+      },
+      {
+        "dC": 0.005,
+        "min_delta_v_m_s": 96.85269215472937,
+        "tau": 0.24326309658303955,
+        "n_valid": 300,
+        "n_total": 300
+      },
+      {
+        "dC": 0.01,
+        "min_delta_v_m_s": 109.57233088725162,
+        "tau": 0.2441304273092855,
+        "n_valid": 300,
+        "n_total": 300
+      },
+      {
+        "dC": 0.02,
+        "min_delta_v_m_s": 134.51318257991556,
+        "tau": 0.24555146552513923,
+        "n_valid": 300,
+        "n_total": 300
+      },
+      {
+        "dC": 0.03,
+        "min_delta_v_m_s": 157.68721522142613,
+        "tau": 0.2466886742404292,
+        "n_valid": 300,
+        "n_total": 300
+      },
+      {
+        "dC": 0.05,
+        "min_delta_v_m_s": 198.98396222837852,
+        "tau": 0.2484527355522277,
+        "n_valid": 300,
+        "n_total": 300
+      }
+    ],
+    "arrival_direction_theta_deg": [
+      {
+        "theta_deg": -20,
+        "min_delta_v_m_s": 100.3744486735269,
+        "tau": 0.27924931823559507
+      },
+      {
+        "theta_deg": -10,
+        "min_delta_v_m_s": 105.76694112607748,
+        "tau": 0.2608909422693235
+      },
+      {
+        "theta_deg": -5,
+        "min_delta_v_m_s": 107.8617174495479,
+        "tau": 0.25236072172336377
+      },
+      {
+        "theta_deg": 0,
+        "min_delta_v_m_s": 109.57233088725162,
+        "tau": 0.2441304273092855
+      },
+      {
+        "theta_deg": 5,
+        "min_delta_v_m_s": 110.90698879380636,
+        "tau": 0.23610852276838776
+      },
+      {
+        "theta_deg": 10,
+        "min_delta_v_m_s": 111.87065356862337,
+        "tau": 0.2282067179287305
+      },
+      {
+        "theta_deg": 20,
+        "min_delta_v_m_s": 112.68826767076541,
+        "tau": 0.21240491857132435
+      }
+    ],
+    "local_phase_dtau": [
+      {
+        "dtau": -0.05,
+        "tau": 0.1941304310115307,
+        "delta_v_m_s": 129.17892751905603
+      },
+      {
+        "dtau": -0.02,
+        "tau": 0.22413043101153074,
+        "delta_v_m_s": 112.76668713977611
+      },
+      {
+        "dtau": -0.01,
+        "tau": 0.23413043101153072,
+        "delta_v_m_s": 110.36560478490068
+      },
+      {
+        "dtau": -0.005,
+        "tau": 0.23913043101153073,
+        "delta_v_m_s": 109.769471677828
+      },
+      {
+        "dtau": 0.0,
+        "tau": 0.24413043101153073,
+        "delta_v_m_s": 109.57233088725141
+      },
+      {
+        "dtau": 0.005,
+        "tau": 0.24913043101153073,
+        "delta_v_m_s": 109.76612696768858
+      },
+      {
+        "dtau": 0.01,
+        "tau": 0.2541304310115307,
+        "delta_v_m_s": 110.33898236737154
+      },
+      {
+        "dtau": 0.02,
+        "tau": 0.2641304310115307,
+        "delta_v_m_s": 112.55788891289485
+      },
+      {
+        "dtau": 0.05,
+        "tau": 0.29413043101153075,
+        "delta_v_m_s": 126.29295485039628
+      }
+    ]
+  },
+  "independent_verification": {
+    "A_generic_propagator_recompute_diff": 0.0,
+    "B_direct_vector_subtraction_diff": 0.0,
+    "C_dimensional_conversion_diff_m_s": 0.0,
+    "D_jacobi_raw_vs_cr3bp_diff": 0.0,
+    "E_phase_periodicity_diff": 7.217888169571747e-17,
+    "F_tighter_tolerance_diff": 2.8840111556370796e-13,
+    "F_tighter_tolerance_settings": {
+      "method": "DOP853",
+      "rtol": 1e-13,
+      "atol": 1e-14
+    }
+  },
+  "propellant_implication_illustrative": {
+    "m0_kg": 6000.0,
+    "isp_320_s": {
+      "m_prop_kg": 205.88350082744046
+    },
+    "isp_450_s": {
+      "m_prop_kg": 147.1426126740345
+    }
+  },
+  "comparison_with_m1_preliminary_scale": {
+    "m1_range_m_s": [
+      10,
+      200
+    ],
+    "m4_selected_delta_v_m_s": 109.57233088725141,
+    "within_m1_scale": true
+  }
+}

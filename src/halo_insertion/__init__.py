@@ -10,24 +10,41 @@ equations of motion, Jacobi constant, collinear equilibrium points
 (L1/L2/L3), a generic numerical propagator, and dimensional/
 nondimensional conversion helpers.
 
-M3 (current): the CR3BP state Jacobian and 6x6 variational equations,
+M3: the CR3BP state Jacobian and 6x6 variational equations,
 state-transition-matrix (STM) propagation, a linearized L2 halo-orbit
 seed, a symmetry-based Newton differential corrector, and one verified
-numerically periodic Earth-Moon L2 halo orbit (with independent
-full-period closure, Jacobi conservation, symmetry, tighter-tolerance
-and alternate-integrator cross-checks, and a monodromy-matrix stability
-characterization). See DESIGN.md's M3 section for the full seed
-provenance, correction formulation, and verification results.
+numerically periodic Earth-Moon L2 halo orbit.
 
-No manifold computation, arrival-trajectory model, or insertion-Delta-v
-solver is implemented yet. Do not import such routines from this
-module — they do not exist until M4+.
+M4 (current): an explicit transfer-arrival state model (Jacobi-
+consistent speed + documented direction models), a dense insertion-
+phase sweep and bounded-scalar refinement over the frozen M3 halo
+orbit, sensitivity studies (arrival speed, arrival direction, local
+phase), and the project's first defensible local halo-insertion Delta-v
+estimate. See DESIGN.md's M4 section for the full arrival-model
+definition, results, and limitations.
+
+**M4 computes a local velocity-matching insertion estimate at the
+corrected halo orbit. It does not compute or optimize the complete
+Earth-to-L2 transfer trajectory.** No manifold, launch/TLI, or
+stationkeeping analysis is implemented. Do not import such routines
+from this module — they do not exist yet.
 
 See DESIGN.md at the repository root for full derivations, assumptions,
 and the milestone roadmap.
 """
 
 from . import constants
+from .arrival import (
+    ArrivalStateError,
+    arrival_speed_from_jacobi,
+    arrival_velocity,
+    delta_v_vector,
+    direction_aligned_with_halo,
+    direction_radial_from_earth,
+    direction_rotated_about_z,
+    earth_position,
+    jacobi_from_state,
+)
 from .cr3bp import (
     CR3BPStateError,
     cr3bp_rhs,
@@ -45,6 +62,7 @@ from .differential_correction import (
 from .equilibria import EquilibriumPoint, find_L1, find_L2, find_L3
 from .halo import HaloOrbitResult, build_l2_halo, full_period_closure, monodromy_matrix
 from .halo_seed import LinearHaloSeed, linear_halo_seed
+from .insertion import InsertionCandidate, evaluate_insertion_at_phase, halo_state_at_phase, phase_sweep, refine_best_phase
 from .normalization import (
     days_to_nondim_time,
     km_s_to_nondim_velocity,
@@ -60,13 +78,13 @@ from .normalization import (
 from .propagation import PropagationSettings, propagate
 from .variational import augmented_rhs, omega_hessian, propagate_with_stm, state_jacobian_A
 
-__version__ = "0.3.0"
+__version__ = "0.4.0"
 
 # Milestones implemented so far. Kept as plain data (not behavior) so
 # tests can assert on project status without ambiguity.
-IMPLEMENTED_MILESTONES = ("M1", "M2", "M3")
+IMPLEMENTED_MILESTONES = ("M1", "M2", "M3", "M4")
 
-# Explicitly NOT implemented yet (M4+). Listed for clarity/testability,
+# Explicitly NOT implemented yet (M5+). Listed for clarity/testability,
 # not as a promise of interface — these names are not importable.
 # NOTE: `richardson_halo_seed` stays listed here deliberately: M3 uses a
 # linearized (first-order) CR3BP variational seed, NOT the third-order
@@ -76,8 +94,9 @@ NOT_YET_IMPLEMENTED = (
     "richardson_halo_seed",
     "stable_manifold",
     "unstable_manifold",
-    "arrival_state_model",
-    "insertion_solver",
+    "transfer_trajectory_optimizer",
+    "translunar_injection_model",
+    "stationkeeping_design",
 )
 
 __all__ = [
@@ -118,6 +137,20 @@ __all__ = [
     "build_l2_halo",
     "full_period_closure",
     "monodromy_matrix",
+    "ArrivalStateError",
+    "earth_position",
+    "arrival_speed_from_jacobi",
+    "direction_aligned_with_halo",
+    "direction_radial_from_earth",
+    "direction_rotated_about_z",
+    "arrival_velocity",
+    "delta_v_vector",
+    "jacobi_from_state",
+    "InsertionCandidate",
+    "halo_state_at_phase",
+    "evaluate_insertion_at_phase",
+    "phase_sweep",
+    "refine_best_phase",
     "IMPLEMENTED_MILESTONES",
     "NOT_YET_IMPLEMENTED",
 ]

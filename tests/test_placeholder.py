@@ -3,10 +3,12 @@
 Originally the M1 placeholder suite. As of M2, generic CR3BP dynamics
 (cr3bp_rhs, propagate, equilibria, Jacobi constant) legitimately exist;
 as of M3, the variational-equations/STM machinery and a halo seed +
-differential corrector + one verified periodic orbit also exist. This
-module's "nothing exists yet" guard is scoped to what remains M4+ only
-(manifolds, arrival-state modeling, insertion solving). Dynamics- and
-halo-specific tests live in the other test_*.py modules.
+differential corrector + one verified periodic orbit also exist; as of
+M4, an arrival-state model and insertion phase-sweep/refinement also
+exist. This module's "nothing exists yet" guard is scoped to what
+remains M5+ only (manifolds, transfer optimization, TLI,
+stationkeeping). Dynamics- and halo-specific tests live in the other
+test_*.py modules.
 """
 
 import halo_insertion as hi
@@ -24,17 +26,16 @@ def test_version_string_present():
     assert all(p.isdigit() for p in parts)
 
 
-def test_m1_m2_m3_milestones_recorded():
-    assert "M1" in hi.IMPLEMENTED_MILESTONES
-    assert "M2" in hi.IMPLEMENTED_MILESTONES
-    assert "M3" in hi.IMPLEMENTED_MILESTONES
+def test_m1_through_m4_milestones_recorded():
+    for m in ("M1", "M2", "M3", "M4"):
+        assert m in hi.IMPLEMENTED_MILESTONES
 
 
-def test_no_m4_solver_falsely_claimed_yet():
-    # M3 must not expose any manifold/arrival/insertion API. This
-    # guards against accidentally shipping/claiming that functionality
-    # ahead of M4+.
-    for name in ("solve_insertion", "stable_manifold", "unstable_manifold", "arrival_state_model"):
+def test_no_m5_solver_falsely_claimed_yet():
+    # M4 must not expose any manifold/transfer-optimization/TLI/
+    # stationkeeping API. This guards against accidentally shipping/
+    # claiming that functionality ahead of M5+.
+    for name in ("stable_manifold", "unstable_manifold", "transfer_trajectory_optimizer", "translunar_injection_model"):
         assert not hasattr(hi, name), f"'{name}' should not exist until a later milestone"
 
     for name in hi.NOT_YET_IMPLEMENTED:
@@ -58,3 +59,16 @@ def test_m3_halo_machinery_now_exists():
         "monodromy_matrix",
     ):
         assert hasattr(hi, name), f"'{name}' should exist as of M3"
+
+
+def test_m4_arrival_and_insertion_machinery_now_exists():
+    # Sanity check that M4's arrival-model/insertion API landed.
+    for name in (
+        "arrival_speed_from_jacobi",
+        "direction_radial_from_earth",
+        "delta_v_vector",
+        "phase_sweep",
+        "refine_best_phase",
+        "evaluate_insertion_at_phase",
+    ):
+        assert hasattr(hi, name), f"'{name}' should exist as of M4"

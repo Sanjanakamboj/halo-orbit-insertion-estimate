@@ -4,9 +4,10 @@
 Earth–Moon L2 telescope-class mission, with clearly stated assumptions
 and a concrete verification plan.
 
-**Status: Milestone 3 (M3) complete. M4 (arrival-state definition +
-insertion-point/velocity-matching Δv calculation) not started. The
-project deliverable (insertion Δv) is NOT complete yet.**
+**Status: Milestone 4 (M4) complete — a first local insertion-Δv
+estimate exists under an explicit, documented arrival-state assumption
+(below). The project is NOT technically complete: a stronger
+transfer-arrival/validation pass (M5) and final packaging (M6) remain.**
 
 Full derivations, equations, and assumptions live in [DESIGN.md](DESIGN.md).
 This README summarizes the current state.
@@ -49,9 +50,10 @@ for the full breakdown of each term.
 M1's target orbit was a **halo-orbit seed** (literature-scale
 placeholder). **As of M3, this project has a genuine numerically
 corrected periodic Earth–Moon L2 halo orbit** (see below) — the M1
-placeholder is superseded for geometry/period purposes, though the M1
-Δv hand-estimates (below) still stand as the only Δv numbers in this
-project; M4 will compute a real insertion Δv from this corrected orbit.
+placeholder is superseded for geometry/period purposes. **As of M4, a
+real insertion Δv has been computed from this corrected orbit** (see
+the headline result below); M1's hand estimates remain as the original
+order-of-magnitude sanity bound they were always intended to be.
 
 ## Key normalization constants (Earth–Moon CR3BP)
 
@@ -134,18 +136,55 @@ ends at a verified periodic orbit only.
 `z0>0`); not an ephemeris trajectory. See DESIGN.md for the x-y/x-z/y-z
 projections and the convergence/Jacobi verification figures.*
 
-## Preliminary insertion-Δv expectation (**M1, not yet computed — a regression bound only**)
+## M4: computed insertion Δv estimate (headline result)
 
-Two independent M1 hand estimates (literature order-of-magnitude +
-local velocity-mismatch scaling) both point to:
+> ## **Δv = 109.6 m/s**
+>
+> **Arrival-state assumption:** Jacobi-consistent arrival speed
+> (`v_arr² = 2·Ω(r_h) − C_arr`, `C_arr = C_halo − 0.01` nondim) +
+> velocity direction radial from Earth `(-μ,0,0)` to the insertion
+> point. This is **not** a propagated Earth-departure trajectory — it
+> is an explicit, documented engineering assumption. A different
+> (equally defensible) assumption gives a different number — see the
+> sensitivity studies below and [DESIGN.md — Milestone 4 section](DESIGN.md#milestone-4--arrival-state-definition-insertion-point-trade-and-halo-insertion-δv-estimate)
+> for the full derivation.
 
-> **O(10¹–10²) m/s — tens to low hundreds of m/s, not km/s.**
+![M4 insertion Delta-v vs. orbital phase](figures/m4_fig1_delta_v_vs_phase.png)
 
-This is **not** a final answer. It exists so that M4's actual computed
-Δv (from real propagated/corrected states) has something to be sanity
-checked against. See [DESIGN.md §7](DESIGN.md#7-definition-of-insertion-δv-for-this-project).
+Selected insertion point: `tau = 0.2441` (phase along the M3 halo
+period), ~3.60 days after the M3 reference crossing, 67,903 km from the
+Moon, 38,303 km from L2. A secondary local minimum exists at
+`tau=0.781` (224.3 m/s) — reported, not discarded. An idealized
+aligned-direction lower bound (nonphysical, direction exactly matching
+`v_halo`) gives 42.3 m/s — shown only as a sanity bound, never as a
+meaningful insertion solution (see DESIGN.md's degeneracy-guard
+discussion).
+
+**Sensitivity:** varying the arrival-speed assumption (`dC` = 0.002 to
+0.05 nondim) moves the minimum Δv from 89.5 to 199.0 m/s; a ±20°
+arrival-direction perturbation moves it only ~12 m/s (109.6→100.4/112.7
+m/s) — direction assumption reshapes *where* the optimum sits more than
+*how deep* it is. The phase optimum itself is broad, not razor-thin:
+Δv grows only ~20 m/s over ±17 hours around the selected phase.
+
+### Comparison with M1's preliminary estimate
+
+M1 (Section 7, hand estimate, no propagated states): **O(10¹–10²) m/s
+(10–200 m/s)**. M4 (this section, computed from the actual corrected
+halo orbit + an explicit arrival assumption): **109.6 m/s** — falls
+within M1's range. This agreement is a genuine outcome of the chosen
+assumption, not tuned to match M1 (DESIGN.md's M4 section documents
+this explicitly).
+
+**This is a local velocity-matching insertion estimate at the
+corrected halo orbit under a stated arrival assumption — it is not an
+optimized Earth-to-L2 transfer trajectory, and the project is not yet
+technically complete.**
 
 ## Illustrative propellant cost (6,000 kg spacecraft)
+
+M1's original order-of-magnitude table (kept for reference), plus the
+M4 computed value:
 
 | Δv (m/s) | Isp=320s | Isp=450s |
 |---:|---:|---:|
@@ -153,8 +192,10 @@ checked against. See [DESIGN.md §7](DESIGN.md#7-definition-of-insertion-δv-for
 | 50 | 94.8 kg | 67.6 kg |
 | 100 | 188.2 kg | 134.4 kg |
 | 150 | 280.1 kg | 200.5 kg |
+| **109.6 (M4 selected)** | **205.9 kg** | **147.1 kg** |
 
-Illustrative only — no propulsion architecture is finalized.
+Illustrative only — no propulsion architecture is finalized. Excludes
+TLI, MCC, stationkeeping, and launch Δv throughout.
 
 ## Milestone roadmap
 
@@ -163,8 +204,8 @@ Illustrative only — no propulsion architecture is finalized.
 | **M1 ✅** | Mission definition, CR3BP derivation, L2 calculation, insertion-Δv definition, hand estimates |
 | **M2 ✅** | CR3BP integrator, equilibrium-point solver, Jacobi conservation verification |
 | **M3 ✅** | Linearized halo seed + STM-based differential correction to a genuine periodic L2 halo orbit |
-| M4 (next) | Arrival-state model + insertion-point Δv calculation + sensitivity study |
-| M5 | Trade study: halo size, insertion point, transfer geometry, propellant implications |
+| **M4 ✅** | Arrival-state model + insertion-point Δv calculation + sensitivity study |
+| M5 (next) | Stronger transfer-arrival/validation pass (not cosmetic packaging) |
 | M6 | Independent validation, convergence study, final figures, portfolio packaging |
 
 ## Limitations (see [DESIGN.md §12](DESIGN.md#12-limitations) for the full list)
@@ -183,13 +224,13 @@ pip install -e ".[dev]"
 pytest -W error
 ```
 
-126 tests pass as of M3: everything from M2 (constants/normalization
-round-trips, CR3BP potential/gradient/RHS validation, L1/L2/L3
-equilibrium residuals, Jacobi-constant identities, propagation/
-convergence checks), plus M3's variational-equations/STM tests, halo
-seed tests, differential-correction tests, and full-orbit periodicity/
-symmetry/monodromy verification tests. No manifold/arrival/insertion
-tests exist yet — those begin at M4.
+150 tests pass as of M4: everything from M2/M3 (constants/normalization,
+CR3BP potential/gradient/RHS validation, L1/L2/L3 equilibrium residuals,
+Jacobi-constant identities, propagation/convergence, variational/STM,
+halo seed, differential-correction, full-orbit periodicity/symmetry/
+monodromy tests), plus M4's arrival-model tests, phase-sweep/refinement
+tests, and propellant/no-regression tests. No manifold/transfer-
+optimization/TLI/stationkeeping tests exist yet — those begin at M5.
 
 ## Repository layout
 
@@ -199,13 +240,18 @@ README.md                       this file
 src/halo_insertion/             package: constants, normalization, CR3BP
                                  dynamics, equilibria, propagation (M2);
                                  variational/STM, halo seed, differential
-                                 correction, halo orchestration (M3)
-tests/                          pytest suite (126 tests as of M3)
+                                 correction, halo orchestration (M3);
+                                 arrival-state model, insertion phase
+                                 sweep/refinement (M4)
+tests/                          pytest suite (150 tests as of M4)
 scripts/make_m2_figures.py      generates the M2 diagnostic figures
 scripts/build_m3_halo.py        builds/corrects/validates the M3 halo orbit,
                                  writes results/m3_*.{csv,json}
 scripts/make_m3_figures.py      generates the M3 diagnostic figures
-figures/                        M2 + M3 diagnostic figures
-results/                        m3_halo_initial_state.csv, m3_correction_history.csv,
-                                 m3_halo_summary.json
+scripts/build_m4_insertion.py   phase sweep, refinement, sensitivity,
+                                 writes results/m4_*.{csv,json}
+scripts/make_m4_figures.py      generates the M4 diagnostic figures
+figures/                        M2 + M3 + M4 diagnostic figures
+results/                        m3_halo_*.{csv,json}, m4_phase_sweep.csv,
+                                 m4_sensitivity.csv, m4_insertion_summary.json
 ```
