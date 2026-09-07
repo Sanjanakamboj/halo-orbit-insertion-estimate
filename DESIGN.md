@@ -1304,6 +1304,268 @@ transfer-arrival/validation milestone, not cosmetic packaging.
 
 ---
 
+## Milestone 5 — Transfer-arrival validation, assumption robustness, and final insertion estimate
+
+Status: **complete.** M4 produced a transparent local velocity-matching
+Δv estimate, but its arrival velocity was *prescribed* (a local
+speed+direction assumption), not *generated* by an actual CR3BP
+trajectory. M5 answers: **how much does the estimated halo-insertion
+Δv change when the arrival velocity is instead obtained from an
+explicitly propagated CR3BP arrival arc?**
+
+**M5 validates the local M4 insertion estimate using dynamically
+propagated CR3BP arrival arcs. It still does not optimize the complete
+Earth-to-L2 transfer from launch/TLI conditions.**
+
+**M3 and M4 are frozen** (unchanged, verified byte-identical
+regeneration below) — M5 is a validation layer built on top, not a
+retuning of either.
+
+### Arrival-arc construction: backward-propagated CR3BP ballistic arc
+
+Terminology discipline (enforced throughout this project's code and
+documentation): every trajectory in this section is a
+**backward-propagated CR3BP ballistic arc** — a real, dynamically
+consistent CR3BP solution, propagated backward in time from a
+candidate pre-burn state. It is never called an "Earth transfer,"
+"optimized transfer," or "manifold transfer," because none of those
+has been demonstrated (no Earth parking orbit is targeted, nothing is
+optimized, no invariant manifold is computed).
+
+Construction, at a candidate halo phase `tau`:
+
+1. Obtain the halo position `r_h` (from the frozen M3 orbit, at phase `tau`).
+2. Construct a candidate pre-burn arrival velocity `v_arr` using the
+   **same M4 arrival model** (Jacobi-consistent speed, `dC` offset;
+   radial-from-Earth direction, optional `theta` rotation).
+3. Form the pre-burn state `s_arr = [r_h, v_arr]`.
+4. Propagate `s_arr` **backward** in CR3BP time for a specified duration `T_back`.
+5. Inspect the backward arc's closest approach to Earth and Moon.
+6. Accept/reject using pre-declared geometric criteria (below).
+7. For accepted arcs, **forward-propagate the backward arc's far-end
+   state** for the same `T_back` to independently recover the arrival
+   state — the mandatory round-trip check (Section "Independent
+   verification" below).
+8. `Delta_v = v_halo - v_arr_recovered`.
+
+### Acceptance criteria (decided before searching; never adjusted afterward)
+
+- **Earthward reach:** the backward arc's minimum distance to Earth
+  along its full sampled trajectory must satisfy `r_E < 0.8 DU` — the
+  exact example threshold given in this milestone's own instructions.
+- **Moon guard:** the arc's minimum distance to the Moon must exceed
+  **`MOON_GUARD_KM = 8687.0 km`** (5 lunar radii, `R_moon = 1737.4 km`)
+  — a conservative engineering guard against numerically meaningless
+  close-encounter geometry, **not** a collision-probability analysis.
+
+Both thresholds were fixed from physical/geometric scale reasoning
+before any candidate was evaluated, and were not revisited after
+seeing which candidates they accepted or rejected.
+
+### Search domain (staged coarse → refine)
+
+**Stage A — coarse phase discovery:** 40-point phase grid across the
+full period (`tau in [0,1)`), fixed at the M4 baseline (`dC=0.01`,
+`theta=0`), backward duration `T_back = 10` days.
+**Result: 12 of 40 grid points accepted.** The accepted region forms
+one contiguous band, roughly `tau in [0.20, 0.475]`, containing a
+single interior minimum near `tau ~ 0.24` — matching M4's *primary*
+local minimum. M4's *secondary* local minimum (`tau ~ 0.78`,
+224.28 m/s) falls in the **rejected** region (see "Alternate branches"
+below).
+
+**Stage B — bounded refinement:** `scipy.optimize.minimize_scalar`
+(Brent, bracket `±0.03` around the best Stage-A grid point,
+`xatol=1e-10`) on the same Δv objective used by M4. Refined result:
+**`tau = 0.244130424...`** — essentially identical to M4's
+`tau = 0.244130431...` (difference ~7e-9 in `tau`).
+
+**Backward-duration selection:** for the refined phase, `T_back` was
+scanned over `{5, 10, 15, 20, 30, 40, 60}` days. `T_back=5` days is
+**not** accepted (`min r_E = 0.872 DU`); `T_back=10` days and beyond
+are all accepted (`min r_E` improves slowly with duration, from 0.403
+to 0.287 DU by 60 days). **`T_back = 10` days** (the shortest tested
+duration that satisfies the Earthward criterion) was selected — keeping
+the arc dynamically local rather than extrapolating unnecessarily far.
+
+### Selected M5 arrival arc
+
+```
+tau            = 0.2441304243987383
+t (days from M3 reference crossing) = 3.598506
+
+position (nondim):  [ 1.135148,  0.096577, -0.013424]
+v_halo   (nondim):  [ 0.066126, -0.007318, -0.075304]
+v_arr (prescribed, nondim):  [ 0.141254,  0.011890, -0.001653]
+v_arr (recovered via round trip, nondim): [ 0.141254,  0.011890, -0.001653]
+Delta_v_vec (nondim): [-0.075128, -0.019209, -0.073651]
+
+|Delta_v| (nondim) = 0.10694711551938008
+|Delta_v| (m/s)    = 109.57233088250732
+
+C_halo  = 3.1412189199161844
+C_arr   = 3.1312189199161846
+Delta_C = 0.009999999999999787   (== dC_baseline, exactly)
+
+backward duration T_back = 10.0 days
+backward-end position (nondim): [ 0.293577, -0.262040, -0.006852]
+backward-end distance from Earth = 0.402717 DU  (< 0.8 DU threshold: accepted)
+minimum distance from Earth (along full arc) = 0.402717 DU
+minimum distance from Moon (along full arc)  = 18,171.562 km  (>> 8,687 km guard)
+```
+
+### M4 vs. M5: the central comparison
+
+```
+Delta_v_M4 = 109.57233088725141 m/s
+Delta_v_M5 = 109.57233088250732 m/s
+
+absolute difference = 4.744e-09 m/s
+percent difference  = 4.330e-09 %
+phase shift          = -6.613e-09 (in tau)
+```
+
+**Classification: robust first-order estimate.** M5's dynamically
+propagated arrival arc — obtained by actually integrating the CR3BP
+equations backward from the M4 candidate state, verifying its
+Earthward reach, and forward-propagating to independently recover the
+arrival velocity — reproduces M4's Δv to **round-trip numerical
+precision** (parts in 10¹⁰), not merely "close agreement." This is the
+expected, and strongest possible, outcome: because `v_arr_recovered`
+equals the originally-prescribed `v_arr` up to integration error (the
+round-trip *is* the verification that the CR3BP flow is
+time-reversible to numerical precision), M5's Δv is mathematically
+guaranteed to match M4's wherever the arc is accepted. **The real
+value M5 adds is not a different number — it is confirming that M4's
+primary branch corresponds to a real, Earthward-reaching, Moon-safe
+CR3BP trajectory, and revealing that M4's secondary branch does not**
+(next section).
+
+### Alternate branch: M4's secondary local minimum does not validate
+
+M4's secondary local minimum (`tau ~ 0.781`, Δv = 224.28 m/s) was
+tested at backward durations `{10, 20, 30, 40, 60, 90, 120}` days.
+**At every tested duration, the arc's minimum Earth distance plateaus
+at ~0.959 DU — far above the 0.8 DU threshold. It is never accepted.**
+This is reported honestly, not discarded or reframed: **M4 alone could
+not distinguish this branch from the primary one** (both are local
+minima of the same local Δv-vs-phase curve); **M5's dynamical check
+reveals a real, physically meaningful difference between them** — only
+the primary branch corresponds to an arrival geometry that plausibly
+connects toward the Earth region under this model. No other
+dynamically-valid branch besides the primary one was found in the
+Stage-A search domain.
+
+### Sensitivity studies
+
+**A. Jacobi offset (`dC`):** at the selected phase, `dC in
+{0.002, 0.005, 0.01, 0.02, 0.03}` are all **accepted** (Δv ranging
+89.6–157.7 m/s, matching M4's own `dC` sensitivity closely). At
+`dC=0.05` (Δv=199.1 m/s) the arc **fails the Moon guard**
+(`min_dist_moon = 5,687 km <= 8,687 km` threshold) even though it
+comfortably satisfies the Earthward criterion (`min r_E = 0.629 DU`) —
+a concrete example of the Moon guard doing real work, not just the
+Earthward criterion.
+
+**B. Direction offset:** `theta in {-20,...,+20} deg` all remain
+**accepted**; Δv ranges 107.9–120.3 m/s (asymmetric: negative offsets
+reduce Δv slightly, positive offsets increase it more) — consistent
+with, and slightly refining, M4's own direction-sensitivity finding.
+
+**C. Backward duration:** **Δv is exactly invariant to `T_back`**
+(109.57233 m/s at every tested duration, 5–60 days) — a
+mathematically necessary consequence of Δv being evaluated at `t=0`
+from `(r_h, v_halo, v_arr)`, independent of anything that happens
+earlier in time. What *does* change with `T_back` is **acceptance**:
+5 days is too short to reach the Earthward threshold; 10+ days
+succeeds. This is reported as the honest, expected finding it is —
+not forced to look more dramatic than it is.
+
+**D. Local phase perturbation:** `dtau in [-0.05, +0.05]` around the
+optimum — all remain **accepted**, with Δv growing smoothly from
+109.57 m/s to 126.29/129.18 m/s at the ±0.05 extremes (essentially
+identical to M4's own phase-sensitivity curve, confirming the M5
+dynamical constraint does not narrow the useful phase window relative
+to M4's local analysis in this neighborhood).
+
+### Numerical convergence study
+
+Loose/medium/tight `DOP853` tolerances at the selected arc:
+
+| Tolerance | rtol | atol | Jacobi max drift | round-trip pos. error | round-trip vel. error | Δv (m/s) |
+|---|---:|---:|---:|---:|---:|---:|
+| loose | 1e-6 | 1e-8 | 1.87e-06 | 4.07e-07 (nondim) | 1.28e-06 (nondim) | 109.57152 |
+| medium | 1e-9 | 1e-10 | 3.23e-09 | 1.87e-09 | 4.82e-09 | 109.57233 |
+| tight | 1e-13 | 1e-14 | 1.04e-12 | 1.13e-13 | 1.53e-13 | 109.57233 |
+
+Clean, monotonic convergence in every metric — Jacobi drift and
+round-trip errors shrink by ~3 orders of magnitude between each
+tolerance level, and Δv itself is stable to 5 decimal places from
+`medium` tolerance onward. Tolerances were fixed from the same
+defaults used throughout this project (M2 Section 9), not chosen to
+make this result look artificially exact.
+
+### Independent verification
+
+| Check | Result |
+|---|---:|
+| A. Backward→forward round trip: position error | 2.645e-06 km |
+| A. Backward→forward round trip: velocity error | 1.879e-08 m/s |
+| B. Jacobi conservation along the backward arc (max drift) | 7.895e-11 (nondim) |
+| C. Insertion position independently reconstructed (generic M2 propagator) | exact match (diff = 0.0) |
+| D. Direct raw vector subtraction for Δv vs. stored value | exact match (diff = 0.0) |
+| E. Dimensional conversion (`Δv_nd * V*`) independently checked | exact match (diff = 0.0) |
+| F. Tighter-tolerance Δv vs. default (from convergence study) | 8.09e-04 m/s |
+| G. RK45 vs. DOP853 final backward-arc state | 1.540e-10 (nondim) |
+| H. M3 halo state at selected phase, independently re-verified (Jacobi identity) | exact match (diff = 0.0) |
+
+No discrepancy found in any independent check.
+
+### Propellant implication (illustrative, `m0 = 6000 kg`)
+
+```
+Delta_v_M5 = 109.57233088250732 m/s   (vs. M4: 109.57233088725141 m/s)
+
+Isp=320s: m_prop = 205.88350 kg   (M4: 205.88350 kg; difference: -8.8e-09 kg)
+Isp=450s: m_prop = 147.14261 kg   (M4: 147.14261 kg; difference: -6.3e-09 kg)
+```
+
+Differences are at the level of round-trip numerical precision, not a
+physically meaningful change. Insertion burn only — excludes TLI, MCC,
+stationkeeping, and launch Δv, as throughout this project.
+
+### Limitations (M5-specific, in addition to Section 12 below and M4's own limitations)
+
+- The Earthward/Moon-guard acceptance criteria are **engineering
+  thresholds**, not a proof that a real Earth-departure trajectory
+  connects to the arc's far end — the backward arc's far-end state
+  (0.40 DU from Earth at `T_back=10` days, i.e., still ~154,000 km
+  from Earth's center) is **not** an Earth parking orbit, LEO, or any
+  specific departure condition.
+- The search domain (40-point Stage-A phase grid, six `dC` values,
+  seven direction offsets, seven backward durations) is a bounded,
+  documented grid — not an exhaustive search of all possible arrival
+  geometries; a materially different arrival-direction model (not
+  radial-from-Earth) could reveal different accepted/rejected regions.
+- Backward-arc dynamics amplify sensitivity to the arrival-state
+  assumption the same way M4's did — M5 does not reduce that
+  assumption-dependence, it only confirms which assumption-dependent
+  answer corresponds to a dynamically self-consistent, Earthward-
+  reaching trajectory.
+- No launch vehicle, TLI, patched-conic Earth departure, real
+  ephemeris, invariant-manifold, stationkeeping, or navigation/
+  dispersion analysis is established by this milestone.
+
+### Explicit scope statement
+
+**M5 validates the local M4 insertion estimate using dynamically
+propagated CR3BP arrival arcs. It still does not optimize the complete
+Earth-to-L2 transfer from launch/TLI conditions.** M6 remains a
+packaging/final-audit milestone, not a mission-design milestone; the
+repository is not "portfolio-ready" until that pass is complete.
+
+---
+
 ## 12. Limitations
 
 Stated explicitly and unconditionally, for this milestone and as an

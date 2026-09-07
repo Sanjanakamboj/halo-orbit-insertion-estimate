@@ -5,10 +5,11 @@ Originally the M1 placeholder suite. As of M2, generic CR3BP dynamics
 as of M3, the variational-equations/STM machinery and a halo seed +
 differential corrector + one verified periodic orbit also exist; as of
 M4, an arrival-state model and insertion phase-sweep/refinement also
-exist. This module's "nothing exists yet" guard is scoped to what
-remains M5+ only (manifolds, transfer optimization, TLI,
-stationkeeping). Dynamics- and halo-specific tests live in the other
-test_*.py modules.
+exist; as of M5, dynamically propagated backward arrival arcs and
+round-trip verification also exist. This module's "nothing exists yet"
+guard is scoped to what remains M6+ only (manifolds, transfer
+optimization, TLI, stationkeeping). Dynamics- and halo-specific tests
+live in the other test_*.py modules.
 """
 
 import halo_insertion as hi
@@ -26,15 +27,15 @@ def test_version_string_present():
     assert all(p.isdigit() for p in parts)
 
 
-def test_m1_through_m4_milestones_recorded():
-    for m in ("M1", "M2", "M3", "M4"):
+def test_m1_through_m5_milestones_recorded():
+    for m in ("M1", "M2", "M3", "M4", "M5"):
         assert m in hi.IMPLEMENTED_MILESTONES
 
 
-def test_no_m5_solver_falsely_claimed_yet():
-    # M4 must not expose any manifold/transfer-optimization/TLI/
+def test_no_m6_solver_falsely_claimed_yet():
+    # M5 must not expose any manifold/transfer-optimization/TLI/
     # stationkeeping API. This guards against accidentally shipping/
-    # claiming that functionality ahead of M5+.
+    # claiming that functionality ahead of M6+.
     for name in ("stable_manifold", "unstable_manifold", "transfer_trajectory_optimizer", "translunar_injection_model"):
         assert not hasattr(hi, name), f"'{name}' should not exist until a later milestone"
 
@@ -72,3 +73,14 @@ def test_m4_arrival_and_insertion_machinery_now_exists():
         "evaluate_insertion_at_phase",
     ):
         assert hasattr(hi, name), f"'{name}' should exist as of M4"
+
+
+def test_m5_arrival_arc_machinery_now_exists():
+    # Sanity check that M5's backward-arc/round-trip API landed.
+    for name in (
+        "propagate_backward_arc",
+        "round_trip_check",
+        "EARTH_DISTANCE_THRESHOLD_DU",
+        "MOON_GUARD_KM",
+    ):
+        assert hasattr(hi, name), f"'{name}' should exist as of M5"

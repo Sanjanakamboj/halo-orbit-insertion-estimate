@@ -15,19 +15,25 @@ state-transition-matrix (STM) propagation, a linearized L2 halo-orbit
 seed, a symmetry-based Newton differential corrector, and one verified
 numerically periodic Earth-Moon L2 halo orbit.
 
-M4 (current): an explicit transfer-arrival state model (Jacobi-
-consistent speed + documented direction models), a dense insertion-
-phase sweep and bounded-scalar refinement over the frozen M3 halo
-orbit, sensitivity studies (arrival speed, arrival direction, local
-phase), and the project's first defensible local halo-insertion Delta-v
-estimate. See DESIGN.md's M4 section for the full arrival-model
-definition, results, and limitations.
+M4: an explicit transfer-arrival state model (Jacobi-consistent speed +
+documented direction models), a dense insertion-phase sweep and
+bounded-scalar refinement over the frozen M3 halo orbit, sensitivity
+studies (arrival speed, arrival direction, local phase), and the
+project's first defensible local halo-insertion Delta-v estimate.
 
-**M4 computes a local velocity-matching insertion estimate at the
-corrected halo orbit. It does not compute or optimize the complete
-Earth-to-L2 transfer trajectory.** No manifold, launch/TLI, or
-stationkeeping analysis is implemented. Do not import such routines
-from this module — they do not exist yet.
+M5 (current): dynamically propagated CR3BP backward arrival arcs used
+to validate M4's local estimate — a staged (coarse phase scan then
+bounded refinement) search with explicit, pre-declared Earthward-reach
+and Moon-clearance acceptance criteria, mandatory backward-forward
+round-trip verification, sensitivity studies, and a real numerical
+convergence study. See DESIGN.md's M5 section for the full search
+domain, acceptance criteria, selected arc, and M4-vs-M5 comparison.
+
+**M5 validates the local M4 insertion estimate using dynamically
+propagated CR3BP arrival arcs. It still does not optimize the complete
+Earth-to-L2 transfer from launch/TLI conditions.** No manifold
+generation, launch/TLI, or stationkeeping analysis is implemented. Do
+not import such routines from this module — they do not exist yet.
 
 See DESIGN.md at the repository root for full derivations, assumptions,
 and the milestone roadmap.
@@ -44,6 +50,13 @@ from .arrival import (
     direction_rotated_about_z,
     earth_position,
     jacobi_from_state,
+)
+from .arrival_arc import (
+    EARTH_DISTANCE_THRESHOLD_DU,
+    MOON_GUARD_KM,
+    ArrivalArcResult,
+    propagate_backward_arc,
+    round_trip_check,
 )
 from .cr3bp import (
     CR3BPStateError,
@@ -78,13 +91,13 @@ from .normalization import (
 from .propagation import PropagationSettings, propagate
 from .variational import augmented_rhs, omega_hessian, propagate_with_stm, state_jacobian_A
 
-__version__ = "0.4.0"
+__version__ = "0.5.0"
 
 # Milestones implemented so far. Kept as plain data (not behavior) so
 # tests can assert on project status without ambiguity.
-IMPLEMENTED_MILESTONES = ("M1", "M2", "M3", "M4")
+IMPLEMENTED_MILESTONES = ("M1", "M2", "M3", "M4", "M5")
 
-# Explicitly NOT implemented yet (M5+). Listed for clarity/testability,
+# Explicitly NOT implemented yet (M6+). Listed for clarity/testability,
 # not as a promise of interface — these names are not importable.
 # NOTE: `richardson_halo_seed` stays listed here deliberately: M3 uses a
 # linearized (first-order) CR3BP variational seed, NOT the third-order
@@ -151,6 +164,11 @@ __all__ = [
     "evaluate_insertion_at_phase",
     "phase_sweep",
     "refine_best_phase",
+    "EARTH_DISTANCE_THRESHOLD_DU",
+    "MOON_GUARD_KM",
+    "ArrivalArcResult",
+    "propagate_backward_arc",
+    "round_trip_check",
     "IMPLEMENTED_MILESTONES",
     "NOT_YET_IMPLEMENTED",
 ]

@@ -1,0 +1,467 @@
+{
+  "m4_baseline": {
+    "tau": 0.24413043101153073,
+    "delta_v_m_s": 109.57233088725141,
+    "dC_baseline": 0.01,
+    "direction_model": "radial_from_earth"
+  },
+  "search_domain": {
+    "stage_a_phase_points": 40,
+    "stage_a_t_back_days": 10.0,
+    "n_accepted_stage_a": 12,
+    "n_total_stage_a": 40,
+    "dC_range_tested": [
+      0.002,
+      0.005,
+      0.01,
+      0.02,
+      0.03,
+      0.05
+    ],
+    "direction_offset_range_deg_tested": [
+      -20,
+      -10,
+      -5,
+      0,
+      5,
+      10,
+      20
+    ],
+    "backward_duration_range_days_tested": [
+      5.0,
+      10.0,
+      15.0,
+      20.0,
+      30.0,
+      40.0,
+      60.0
+    ]
+  },
+  "acceptance_criteria": {
+    "earthward_threshold_du": 0.8,
+    "moon_guard_km": 8687.0,
+    "moon_guard_description": "~5 lunar radii, conservative engineering guard against numerically meaningless close-encounter geometry, NOT a collision-probability analysis"
+  },
+  "selected_arc": {
+    "tau": 0.2441304243987383,
+    "t_days_from_m3_reference": 3.598506253401225,
+    "position_nondim": [
+      1.135147647908996,
+      0.09657667674125417,
+      -0.013424185379715084
+    ],
+    "v_halo_nondim": [
+      0.06612635773188874,
+      -0.007318268242663512,
+      -0.07530387705600544
+    ],
+    "v_arr_prescribed_nondim": [
+      0.14125442247677664,
+      0.011890441664943853,
+      -0.0016527747541421715
+    ],
+    "v_arr_recovered_nondim": [
+      0.14125442246610148,
+      0.011890441679858109,
+      -0.0016527747538675152
+    ],
+    "delta_v_vec_nondim": [
+      -0.07512806473421274,
+      -0.01920870992252162,
+      -0.07365110230213792
+    ],
+    "delta_v_nondim": 0.10694711551938008,
+    "delta_v_m_s": 109.57233088250732,
+    "C_halo": 3.1412189199161844,
+    "C_arr": 3.1312189199161846,
+    "delta_C": 0.009999999999999787,
+    "t_back_days": 10.0,
+    "backward_end_state_nondim": [
+      0.2935768547138786,
+      -0.26203954020856524,
+      -0.00685190597297395,
+      1.2779260135630968,
+      0.5727472324101913,
+      -0.034194367224870854
+    ],
+    "backward_end_earth_distance_du": 0.402716942752057,
+    "min_dist_earth_du": 0.402716942752057,
+    "min_dist_moon_km": 18171.5620880573,
+    "jacobi_max_drift": 7.894618292425548e-11,
+    "round_trip_position_error_nondim": 6.881066612185661e-12,
+    "round_trip_position_error_km": 2.645082005724168e-06,
+    "round_trip_velocity_error_nondim": 1.8343102101305144e-11,
+    "round_trip_velocity_error_m_s": 1.8793367573262e-08
+  },
+  "duration_scan_at_selected_phase": [
+    {
+      "t_back_days": 5.0,
+      "accepted": false,
+      "min_dist_earth_du": 0.872114961811587,
+      "min_dist_moon_km": 18171.5620880573,
+      "delta_v_m_s": 109.57233088725219
+    },
+    {
+      "t_back_days": 10.0,
+      "accepted": true,
+      "min_dist_earth_du": 0.402716942752057,
+      "min_dist_moon_km": 18171.5620880573,
+      "delta_v_m_s": 109.57233088725219
+    },
+    {
+      "t_back_days": 15.0,
+      "accepted": true,
+      "min_dist_earth_du": 0.3199384904642299,
+      "min_dist_moon_km": 18176.352728223366,
+      "delta_v_m_s": 109.57233088725219
+    },
+    {
+      "t_back_days": 20.0,
+      "accepted": true,
+      "min_dist_earth_du": 0.3199415303842266,
+      "min_dist_moon_km": 18171.5620880573,
+      "delta_v_m_s": 109.57233088725219
+    },
+    {
+      "t_back_days": 30.0,
+      "accepted": true,
+      "min_dist_earth_du": 0.31325519110664596,
+      "min_dist_moon_km": 18179.19227715531,
+      "delta_v_m_s": 109.57233088725219
+    },
+    {
+      "t_back_days": 40.0,
+      "accepted": true,
+      "min_dist_earth_du": 0.2967326656541643,
+      "min_dist_moon_km": 18209.67228569157,
+      "delta_v_m_s": 109.57233088725219
+    },
+    {
+      "t_back_days": 60.0,
+      "accepted": true,
+      "min_dist_earth_du": 0.28710196342802363,
+      "min_dist_moon_km": 18225.128290481265,
+      "delta_v_m_s": 109.57233088725219
+    }
+  ],
+  "sensitivity": {
+    "jacobi_offset_dC": [
+      {
+        "dC": 0.002,
+        "delta_v_m_s": 89.56467727536437,
+        "accepted": true,
+        "min_dist_earth_du": 0.5862644451681908
+      },
+      {
+        "dC": 0.005,
+        "delta_v_m_s": 96.85888395508965,
+        "accepted": true,
+        "min_dist_earth_du": 0.4775470111493862
+      },
+      {
+        "dC": 0.01,
+        "delta_v_m_s": 109.57233088725219,
+        "accepted": true,
+        "min_dist_earth_du": 0.402716942752057
+      },
+      {
+        "dC": 0.02,
+        "delta_v_m_s": 134.52735489929654,
+        "accepted": true,
+        "min_dist_earth_du": 0.41856404512543266
+      },
+      {
+        "dC": 0.03,
+        "delta_v_m_s": 157.72907496168193,
+        "accepted": true,
+        "min_dist_earth_du": 0.48806962779611757
+      },
+      {
+        "dC": 0.05,
+        "delta_v_m_s": 199.08790209506748,
+        "accepted": false,
+        "min_dist_earth_du": 0.6288404173372641
+      }
+    ],
+    "direction_offset_theta_deg": [
+      {
+        "theta_deg": -20,
+        "delta_v_m_s": 108.95346164741089,
+        "accepted": true,
+        "min_dist_earth_du": 0.6165799784392014
+      },
+      {
+        "theta_deg": -10,
+        "delta_v_m_s": 107.87835984957452,
+        "accepted": true,
+        "min_dist_earth_du": 0.504133878015992
+      },
+      {
+        "theta_deg": -5,
+        "delta_v_m_s": 108.38360875796441,
+        "accepted": true,
+        "min_dist_earth_du": 0.44665681153842723
+      },
+      {
+        "theta_deg": 0,
+        "delta_v_m_s": 109.57233088725219,
+        "accepted": true,
+        "min_dist_earth_du": 0.402716942752057
+      },
+      {
+        "theta_deg": 5,
+        "delta_v_m_s": 111.41380455639076,
+        "accepted": true,
+        "min_dist_earth_du": 0.38399878216095085
+      },
+      {
+        "theta_deg": 10,
+        "delta_v_m_s": 113.86276843699112,
+        "accepted": true,
+        "min_dist_earth_du": 0.40259290695992445
+      },
+      {
+        "theta_deg": 20,
+        "delta_v_m_s": 120.35163449124731,
+        "accepted": true,
+        "min_dist_earth_du": 0.5907148641611373
+      }
+    ],
+    "backward_duration_days": [
+      {
+        "t_back_days": 5.0,
+        "accepted": false,
+        "min_dist_earth_du": 0.872114961811587,
+        "min_dist_moon_km": 18171.5620880573,
+        "delta_v_m_s": 109.57233088725219
+      },
+      {
+        "t_back_days": 10.0,
+        "accepted": true,
+        "min_dist_earth_du": 0.402716942752057,
+        "min_dist_moon_km": 18171.5620880573,
+        "delta_v_m_s": 109.57233088725219
+      },
+      {
+        "t_back_days": 15.0,
+        "accepted": true,
+        "min_dist_earth_du": 0.3199384904642299,
+        "min_dist_moon_km": 18176.352728223366,
+        "delta_v_m_s": 109.57233088725219
+      },
+      {
+        "t_back_days": 20.0,
+        "accepted": true,
+        "min_dist_earth_du": 0.3199415303842266,
+        "min_dist_moon_km": 18171.5620880573,
+        "delta_v_m_s": 109.57233088725219
+      },
+      {
+        "t_back_days": 30.0,
+        "accepted": true,
+        "min_dist_earth_du": 0.31325519110664596,
+        "min_dist_moon_km": 18179.19227715531,
+        "delta_v_m_s": 109.57233088725219
+      },
+      {
+        "t_back_days": 40.0,
+        "accepted": true,
+        "min_dist_earth_du": 0.2967326656541643,
+        "min_dist_moon_km": 18209.67228569157,
+        "delta_v_m_s": 109.57233088725219
+      },
+      {
+        "t_back_days": 60.0,
+        "accepted": true,
+        "min_dist_earth_du": 0.28710196342802363,
+        "min_dist_moon_km": 18225.128290481265,
+        "delta_v_m_s": 109.57233088725219
+      }
+    ],
+    "local_phase_dtau": [
+      {
+        "dtau": -0.05,
+        "tau": 0.1941304243987383,
+        "delta_v_m_s": 129.17893252071408,
+        "accepted": true,
+        "min_dist_earth_du": 0.6903813242300136
+      },
+      {
+        "dtau": -0.02,
+        "tau": 0.22413042439873831,
+        "delta_v_m_s": 112.76668925897312,
+        "accepted": true,
+        "min_dist_earth_du": 0.4476749896871275
+      },
+      {
+        "dtau": -0.01,
+        "tau": 0.2341304243987383,
+        "delta_v_m_s": 110.36560583938169,
+        "accepted": true,
+        "min_dist_earth_du": 0.4168594763196175
+      },
+      {
+        "dtau": -0.005,
+        "tau": 0.2391304243987383,
+        "delta_v_m_s": 109.76947220106952,
+        "accepted": true,
+        "min_dist_earth_du": 0.40798668415116385
+      },
+      {
+        "dtau": 0.0,
+        "tau": 0.2441304243987383,
+        "delta_v_m_s": 109.57233088725219,
+        "accepted": true,
+        "min_dist_earth_du": 0.402716942752057
+      },
+      {
+        "dtau": 0.005,
+        "tau": 0.2491304243987383,
+        "delta_v_m_s": 109.76612645770321,
+        "accepted": true,
+        "min_dist_earth_du": 0.40052411428786544
+      },
+      {
+        "dtau": 0.01,
+        "tau": 0.2541304243987383,
+        "delta_v_m_s": 110.33898136546878,
+        "accepted": true,
+        "min_dist_earth_du": 0.4009103466083636
+      },
+      {
+        "dtau": 0.02,
+        "tau": 0.2641304243987383,
+        "delta_v_m_s": 112.55788699722326,
+        "accepted": true,
+        "min_dist_earth_du": 0.40756336542450666
+      },
+      {
+        "dtau": 0.05,
+        "tau": 0.2941304243987383,
+        "delta_v_m_s": 126.29295089281601,
+        "accepted": true,
+        "min_dist_earth_du": 0.447685814933948
+      }
+    ]
+  },
+  "convergence_study": [
+    {
+      "tolerance": "loose",
+      "rtol": 1e-06,
+      "atol": 1e-08,
+      "jacobi_max_drift": 1.8741644964848092e-06,
+      "round_trip_pos_err_nondim": 4.0721076037476704e-07,
+      "round_trip_vel_err_nondim": 1.278399908052512e-06,
+      "delta_v_m_s": 109.57152140906571
+    },
+    {
+      "tolerance": "medium",
+      "rtol": 1e-09,
+      "atol": 1e-10,
+      "jacobi_max_drift": 3.2288025586524327e-09,
+      "round_trip_pos_err_nondim": 1.8650252350457535e-09,
+      "round_trip_vel_err_nondim": 4.820866559479299e-09,
+      "delta_v_m_s": 109.57232810491395
+    },
+    {
+      "tolerance": "tight",
+      "rtol": 1e-13,
+      "atol": 1e-14,
+      "jacobi_max_drift": 1.0418332863082469e-12,
+      "round_trip_pos_err_nondim": 1.1269315897820817e-13,
+      "round_trip_vel_err_nondim": 1.5263483163839178e-13,
+      "delta_v_m_s": 109.57233088731329
+    }
+  ],
+  "independent_verification": {
+    "A_round_trip_position_error_km": 2.645082005724168e-06,
+    "A_round_trip_velocity_error_m_s": 1.8793367573262e-08,
+    "B_jacobi_max_drift_along_arc": 7.894618292425548e-11,
+    "C_generic_propagator_position_recompute_diff": 0.0,
+    "D_direct_vector_subtraction_diff_m_s": 0.0,
+    "E_dimensional_conversion_diff_m_s": 0.0,
+    "F_tighter_tolerance_delta_v_diff_m_s": 0.0008094782475751572,
+    "G_rk45_vs_dop853_final_state_diff": 1.5400564210480192e-10,
+    "H_jacobi_raw_vs_cr3bp_diff": 0.0
+  },
+  "m4_vs_m5_comparison": {
+    "delta_v_m4_m_s": 109.57233088725141,
+    "delta_v_m5_m_s": 109.57233088250732,
+    "absolute_difference_m_s": 4.744094894704176e-09,
+    "percent_difference": 4.3296467787892474e-09,
+    "phase_shift_tau": -6.612792424753877e-09,
+    "classification": "robust first-order estimate (M5 confirms M4 to round-trip precision)"
+  },
+  "propellant_implication_illustrative": {
+    "m0_kg": 6000.0,
+    "m4": {
+      "isp_320_s": {
+        "m_prop_kg": 205.88350082744046
+      },
+      "isp_450_s": {
+        "m_prop_kg": 147.1426126740345
+      }
+    },
+    "m5": {
+      "isp_320_s": {
+        "m_prop_kg": 205.88350081868145
+      },
+      "isp_450_s": {
+        "m_prop_kg": 147.14261266774287
+      }
+    },
+    "propellant_difference_kg": {
+      "isp_320_s": -8.759002412261907e-09,
+      "isp_450_s": -6.291628551480244e-09
+    }
+  },
+  "alternate_branch_m4_secondary_minimum": {
+    "tau": 0.781,
+    "m4_delta_v_m_s": 224.27727581773502,
+    "duration_scan": [
+      {
+        "t_back_days": 10.0,
+        "accepted": false,
+        "min_dist_earth_du": 0.9594219841891524,
+        "min_dist_moon_km": 15499.744801237617
+      },
+      {
+        "t_back_days": 20.0,
+        "accepted": false,
+        "min_dist_earth_du": 0.9594219841891524,
+        "min_dist_moon_km": 15499.744801237617
+      },
+      {
+        "t_back_days": 30.0,
+        "accepted": false,
+        "min_dist_earth_du": 0.9594219841891524,
+        "min_dist_moon_km": 15535.088691527111
+      },
+      {
+        "t_back_days": 40.0,
+        "accepted": false,
+        "min_dist_earth_du": 0.9594219841891524,
+        "min_dist_moon_km": 15672.9358479502
+      },
+      {
+        "t_back_days": 60.0,
+        "accepted": false,
+        "min_dist_earth_du": 0.9594219841891524,
+        "min_dist_moon_km": 15738.641339647036
+      },
+      {
+        "t_back_days": 90.0,
+        "accepted": false,
+        "min_dist_earth_du": 0.9594219841891524,
+        "min_dist_moon_km": 15738.641339647036
+      },
+      {
+        "t_back_days": 120.0,
+        "accepted": false,
+        "min_dist_earth_du": 0.9594219841891524,
+        "min_dist_moon_km": 15738.641339647036
+      }
+    ],
+    "conclusion": "Does NOT satisfy the Earthward acceptance criterion at any tested backward duration (10-120 days); min Earth distance plateaus at ~0.959 DU, far above the 0.8 DU threshold. This branch is NOT validated as a dynamically Earthward-reaching arrival arc under this model, unlike the primary (tau~0.244) branch."
+  }
+}

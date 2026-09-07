@@ -4,10 +4,11 @@
 Earth–Moon L2 telescope-class mission, with clearly stated assumptions
 and a concrete verification plan.
 
-**Status: Milestone 4 (M4) complete — a first local insertion-Δv
-estimate exists under an explicit, documented arrival-state assumption
-(below). The project is NOT technically complete: a stronger
-transfer-arrival/validation pass (M5) and final packaging (M6) remain.**
+**Status: Milestone 5 (M5) complete — the M4 local insertion-Δv
+estimate has been validated against a dynamically propagated CR3BP
+arrival arc and confirmed to round-trip numerical precision (below).
+The repository is NOT yet portfolio-ready: a final packaging/audit
+pass (M6) remains.**
 
 Full derivations, equations, and assumptions live in [DESIGN.md](DESIGN.md).
 This README summarizes the current state.
@@ -178,8 +179,44 @@ this explicitly).
 
 **This is a local velocity-matching insertion estimate at the
 corrected halo orbit under a stated arrival assumption — it is not an
-optimized Earth-to-L2 transfer trajectory, and the project is not yet
-technically complete.**
+optimized Earth-to-L2 transfer trajectory.**
+
+## M5: dynamically propagated arrival-arc validation
+
+**Did M4 survive validation? Yes.**
+
+| | Δv |
+|---|---:|
+| **M4** (local arrival-state assumption) | **109.5723 m/s** |
+| **M5** (dynamically propagated CR3BP arrival arc) | **109.5723 m/s** |
+| Difference | 4.7×10⁻⁹ m/s (4.3×10⁻⁹ %) |
+
+M5 takes M4's exact candidate state, propagates it **backward** as a
+real CR3BP trajectory, checks that it genuinely reaches toward Earth
+(`< 0.8 DU`, the threshold set *before* searching) while clearing the
+Moon by a conservative 5-lunar-radii guard, then **forward**-propagates
+the far end to independently recover the arrival velocity. The
+recovered Δv matches M4 to round-trip numerical precision —
+**classification: robust first-order estimate.**
+
+![M4 vs M5 insertion estimate](figures/m5_fig2_m4_vs_m5.png)
+
+**A genuine finding, not hidden:** M4's *secondary* local minimum
+(`tau≈0.781`, 224.3 m/s) does **not** survive this validation — its
+backward arc never gets closer than 0.959 DU to Earth at any tested
+duration (10–120 days), well short of the 0.8 DU threshold. M4 alone
+could not tell these two branches apart; M5's dynamical check can.
+
+![M5 arrival arc](figures/m5_fig1_arrival_arc.png)
+
+*The backward-propagated arrival arc (purple) swings past L1 and near
+the Moon before heading toward Earth — a real CR3BP trajectory, not a
+targeted Earth departure. See DESIGN.md for the full search domain,
+sensitivity studies, and convergence results.*
+
+**This validates M4's estimate under this project's CR3BP, impulsive-
+burn fidelity. It does not optimize or claim a complete Earth-to-L2
+transfer, and the project is not yet portfolio-ready (M6 remains).**
 
 ## Illustrative propellant cost (6,000 kg spacecraft)
 
@@ -192,10 +229,11 @@ M4 computed value:
 | 50 | 94.8 kg | 67.6 kg |
 | 100 | 188.2 kg | 134.4 kg |
 | 150 | 280.1 kg | 200.5 kg |
-| **109.6 (M4 selected)** | **205.9 kg** | **147.1 kg** |
+| **109.6 (M4/M5, final)** | **205.9 kg** | **147.1 kg** |
 
 Illustrative only — no propulsion architecture is finalized. Excludes
-TLI, MCC, stationkeeping, and launch Δv throughout.
+TLI, MCC, stationkeeping, and launch Δv throughout. (M4 and M5
+propellant values agree to ~1e-8 kg — see M5 section above.)
 
 ## Milestone roadmap
 
@@ -205,8 +243,8 @@ TLI, MCC, stationkeeping, and launch Δv throughout.
 | **M2 ✅** | CR3BP integrator, equilibrium-point solver, Jacobi conservation verification |
 | **M3 ✅** | Linearized halo seed + STM-based differential correction to a genuine periodic L2 halo orbit |
 | **M4 ✅** | Arrival-state model + insertion-point Δv calculation + sensitivity study |
-| M5 (next) | Stronger transfer-arrival/validation pass (not cosmetic packaging) |
-| M6 | Independent validation, convergence study, final figures, portfolio packaging |
+| **M5 ✅** | Dynamically propagated CR3BP arrival-arc validation of the M4 estimate |
+| M6 (next) | Independent validation, final figures, portfolio packaging (not yet done) |
 
 ## Limitations (see [DESIGN.md §12](DESIGN.md#12-limitations) for the full list)
 
@@ -224,13 +262,15 @@ pip install -e ".[dev]"
 pytest -W error
 ```
 
-150 tests pass as of M4: everything from M2/M3 (constants/normalization,
+168 tests pass as of M5: everything from M2-M4 (constants/normalization,
 CR3BP potential/gradient/RHS validation, L1/L2/L3 equilibrium residuals,
 Jacobi-constant identities, propagation/convergence, variational/STM,
 halo seed, differential-correction, full-orbit periodicity/symmetry/
-monodromy tests), plus M4's arrival-model tests, phase-sweep/refinement
-tests, and propellant/no-regression tests. No manifold/transfer-
-optimization/TLI/stationkeeping tests exist yet — those begin at M5.
+monodromy, arrival-model, phase-sweep/refinement tests), plus M5's
+backward-arrival-arc tests (round-trip closure, Earthward/Moon-guard
+criteria, propellant, no-regression). No manifold/transfer-
+optimization/TLI/stationkeeping tests exist yet — those begin at M6, if
+ever in scope.
 
 ## Repository layout
 
@@ -242,8 +282,9 @@ src/halo_insertion/             package: constants, normalization, CR3BP
                                  variational/STM, halo seed, differential
                                  correction, halo orchestration (M3);
                                  arrival-state model, insertion phase
-                                 sweep/refinement (M4)
-tests/                          pytest suite (150 tests as of M4)
+                                 sweep/refinement (M4); backward arrival-
+                                 arc propagation/round-trip check (M5)
+tests/                          pytest suite (168 tests as of M5)
 scripts/make_m2_figures.py      generates the M2 diagnostic figures
 scripts/build_m3_halo.py        builds/corrects/validates the M3 halo orbit,
                                  writes results/m3_*.{csv,json}
@@ -251,7 +292,12 @@ scripts/make_m3_figures.py      generates the M3 diagnostic figures
 scripts/build_m4_insertion.py   phase sweep, refinement, sensitivity,
                                  writes results/m4_*.{csv,json}
 scripts/make_m4_figures.py      generates the M4 diagnostic figures
-figures/                        M2 + M3 + M4 diagnostic figures
+scripts/build_m5_validation.py  backward-arc search, round-trip check,
+                                 sensitivity, convergence, writes results/m5_*
+scripts/make_m5_figures.py      generates the M5 diagnostic figures
+figures/                        M2 + M3 + M4 + M5 diagnostic figures
 results/                        m3_halo_*.{csv,json}, m4_phase_sweep.csv,
-                                 m4_sensitivity.csv, m4_insertion_summary.json
+                                 m4_sensitivity.csv, m4_insertion_summary.json,
+                                 m5_arrival_arc_search.csv, m5_sensitivity.csv,
+                                 m5_summary.json
 ```
