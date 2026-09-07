@@ -529,6 +529,184 @@ not exist until M2+.
 
 ---
 
+## Milestone 2 — CR3BP dynamics, equilibrium points, propagation, and Jacobi verification
+
+Status: **complete.** This section documents what M2 actually built and
+verified. **No halo orbit — seeded, corrected, or otherwise — has been
+generated at this point.** Everything below is generic CR3BP machinery
+(equilibrium points, propagation, Jacobi diagnostics) applicable to any
+CR3BP state, not halo-specific.
+
+### Implemented equations
+
+Exactly the Section 4/5 equations, coded with no changes of convention:
+`Omega`, its analytic gradient `(dOmega/dx, dOmega/dy, dOmega/dz)`, the
+first-order RHS `[xdot,ydot,zdot,xddot,yddot,zddot]`, and the Jacobi
+constant `C = 2*Omega - v^2`. The production RHS uses closed-form
+analytic derivatives only — no finite differences are used inside
+`cr3bp_rhs`; finite differences appear only in a test-side cross-check
+(`test_analytic_gradient_matches_finite_difference`).
+
+Modules: [`src/halo_insertion/constants.py`](src/halo_insertion/constants.py),
+[`normalization.py`](src/halo_insertion/normalization.py),
+[`cr3bp.py`](src/halo_insertion/cr3bp.py),
+[`equilibria.py`](src/halo_insertion/equilibria.py),
+[`propagation.py`](src/halo_insertion/propagation.py).
+
+### Numerical constants (reproduced from production code)
+
+```
+mu  = 0.012150583916324809
+DU  = 384400.0 km
+TU  = 4.342479849812527 days  (375190.259 s)
+V*  = 1024.5468552412854 m/s
+```
+
+These match the M1 hand values to full precision (M1 rounded to 6-7
+significant figures for readability; production code carries full
+`float64` precision). **No discrepancy found.**
+
+### L1 / L2 / L3 — numerically solved, not hardcoded
+
+Each point is a `scipy.optimize.brentq` root of `dOmega/dx(x,0,0)=0` on
+a physically-motivated bracket (Section 7 of this document, generalized
+to all three collinear points):
+
+| Point | x (nondim, barycentric) | `\|dOmega/dx\|` residual | dist. from Earth | dist. from Moon |
+|---|---:|---:|---:|---:|
+| L1 | 0.8369151341 | 2.22e-16 | 326,380.862 km | 58,019.138 km |
+| L2 | 1.1556821589 | 1.87e-14 | 448,914.906 km | 64,514.906 km |
+| L3 | -1.0050626451 | 4.98e-16 | 381,675.396 km | 766,075.396 km |
+
+**L2 agrees with the M1 hand value (`x = 1.1556821589`) to 10 decimal
+places** — reproduced exactly by an independent `brentq` solve rather
+than the M1 Newton's-method solve, confirming M1's L2 result.
+
+**One refinement to M1's phrasing, not an error:** M1 stated the L2
+distance from Earth as "≈444,244 km, since barycenter ≈ Earth center."
+That approximation treats the barycenter as coincident with Earth's
+center. In production code, Earth's actual position is `(-mu, 0, 0)`,
+offset from the barycenter by `mu*DU ≈ 4,671 km`. The barycentric L2
+coordinate (`x_L2 * DU = 444,244.222 km`) is unchanged and still
+correct as "distance from the barycenter"; the **precise** distance
+from Earth's own center is `(x_L2 + mu) * DU = 448,914.906 km`. This
+does not change the M1 Moon-relative distance (64,514.906 km, which
+does not depend on this approximation) or the insertion-Δv conclusions,
+and is noted here purely for precision. M1's Section 6 statement is
+retained as-is (it was explicitly qualified with "≈"); this section
+supersedes it only for the Earth-distance figure.
+
+### Propagator
+
+`propagation.propagate()` wraps `scipy.integrate.solve_ivp` with
+default settings `method="DOP853", rtol=1e-11, atol=1e-12`, raw
+`OdeResult` exposed unmodified (`result.success` must be checked by the
+caller). No halo-specific logic.
+
+### Equilibrium-state propagation verification
+
+Each of L1, L2, L3 was set as an exact equilibrium state
+`[x_Li, 0,0,0,0,0]` and propagated 30 days at default tolerances:
+
+- L1 and L3 (see below on stability) remained stationary to within
+  numerical round-off.
+- **L2's drift over 30 days was ≈1.77e-8 (nondimensional state-vector
+  norm)** — small, but larger than round-off, because **collinear
+  libration points are dynamically unstable equilibria**: any
+  round-off-level perturbation from the exact fixed point grows under
+  the CR3BP's local dynamics. This is expected physics, not an
+  implementation defect — it is exactly why real halo missions require
+  active stationkeeping (Section 12). The test suite bounds this drift
+  at `< 1e-6`, loose enough to tolerate genuine round-off growth but
+  tight enough to catch a real sign/offset error (which would produce
+  drift many orders of magnitude larger, immediately, not after 30
+  days).
+
+### Jacobi-constant conservation
+
+On the M2 non-equilibrium verification trajectory (next subsection),
+propagated 10 days at default tolerances, Jacobi drift stayed below
+`2e-11` (nondimensional) throughout — see Figure 2. At equilibrium
+states, `C` matches `2*Omega` to `~1e-13`, confirming the zero-velocity
+identity (`test_equilibrium_state_gives_C_equals_2_omega`,
+`test_zero_velocity_gives_C_equals_2_omega_generic_point`).
+
+### M2 verification trajectory (explicitly NOT a halo orbit)
+
+A single benign, non-equilibrium state near L2 was used throughout M2's
+propagator/Jacobi/convergence checks:
+
+```
+state0 = [x_L2 - 0.02, 0.01, 0.005, 0.0, 0.01, 0.005]   (nondimensional)
+propagated over 10 days
+```
+
+This state has no halo-orbit design intent whatsoever — it exists
+purely to exercise the propagator on a non-trivial, non-equilibrium
+CR3BP trajectory. See Figure 2.
+
+### Numerical convergence study
+
+Three integrator settings on the same verification trajectory:
+
+| Setting | `rtol` | `atol` | Jacobi drift (10 days) | Terminal-state diff vs. tight |
+|---|---:|---:|---:|---:|
+| loose | 1e-6 | 1e-8 | 1.148e-06 | 6.251e-05 |
+| medium | 1e-9 | 1e-10 | 2.433e-09 | 8.956e-08 |
+| tight | 1e-12 | 1e-13 | 1.410e-12 | — (reference) |
+
+Jacobi drift and terminal-state difference **both shrink monotonically
+and by comparable orders of magnitude** as tolerances tighten —
+`test_numerical_convergence_three_tolerance_levels` asserts this
+ordering directly. This is a genuine 3-point convergence demonstration,
+not a single-tolerance claim.
+
+### Independent RHS/gradient cross-check
+
+Two independent checks, at five arbitrary nonsingular states not
+appearing anywhere else in this document (`(0.5,0.2,0.1)`,
+`(1.2,-0.05,0.02)`, `(-0.3,0.4,-0.1)`, `(0.85,0.0,0.15)`,
+`(1.05,0.03,0.0)`):
+
+1. **Analytic gradient vs. central finite difference** of `Omega` —
+   agreement to `~1e-8` (finite-difference truncation-limited).
+2. **Production RHS vs. an independently-written direct acceleration
+   expression** (built from gravity + centrifugal + Coriolis terms
+   coded from scratch, not sharing code with `effective_potential_gradient`)
+   — **max discrepancy across all five states: 1.33e-15** (machine
+   precision). This check is specifically designed to catch wrong
+   Coriolis signs, wrong Earth/Moon offsets, swapped `mu`/`(1-mu)`, or a
+   missing centrifugal term — none were found.
+
+### Symmetry checks
+
+- **Planar invariance:** a state with `z=zdot=0` has `zddot=0` and
+  remains exactly planar under propagation (verified structurally and
+  by 10-day propagation, max `|z|, |zdot| < 1e-10`).
+- **z-reflection:** `dOmega/dx, dOmega/dy` are even in `z`;
+  `dOmega/dz` is odd in `z` — verified to `1e-14`.
+- **y-reflection:** `dOmega/dx` is even in `y`; `dOmega/dy` is odd in
+  `y` — verified to `1e-14`.
+
+### Discrepancies from M1
+
+**None affecting any M1 conclusion.** The only item worth flagging is
+the Earth-distance refinement above (barycenter vs. Earth-center
+offset, ~4,671 km), which M1 had already qualified with "≈" and does
+not change the L2-vs-Moon distance, the physical-scale cross-check
+(60,000–70,000 km), or any Section 7 insertion-Δv estimate.
+
+### Explicit scope statement
+
+**No halo-orbit seed, differential correction, state-transition
+matrix, monodromy matrix, manifold, arrival-state model, or insertion
+Δv has been computed in M2.** M2 delivers only generic, halo-agnostic
+CR3BP infrastructure: potential/gradient, equations of motion, Jacobi
+constant, L1/L2/L3, and a verified propagator. Halo-orbit generation
+begins in M3.
+
+---
+
 ## 12. Limitations
 
 Stated explicitly and unconditionally, for this milestone and as an

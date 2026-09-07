@@ -4,8 +4,8 @@
 Earth–Moon L2 telescope-class mission, with clearly stated assumptions
 and a concrete verification plan.
 
-**Status: Milestone 1 (M1) complete. M2 (CR3BP integrator + equilibrium
-solver + Jacobi verification) not started.**
+**Status: Milestone 2 (M2) complete. M3 (Richardson analytical halo
+seed + differential correction to a periodic orbit) not started.**
 
 Full derivations, equations, and assumptions live in [DESIGN.md](DESIGN.md).
 This README summarizes the current state.
@@ -70,6 +70,39 @@ distance beyond Moon surface ≈ 62,778 km
 Consistent with the expected ~60,000–70,000 km-beyond-Moon range for
 Earth–Moon L2. Derivation: [DESIGN.md §6](DESIGN.md#6-l2-location).
 
+## M2: CR3BP dynamics, equilibrium points, propagation (production code)
+
+M2 implements and verifies the normalized Earth–Moon CR3BP: effective
+potential/gradient, equations of motion, Jacobi constant, a numerical
+L1/L2/L3 solver, and a generic propagator. Full details:
+[DESIGN.md — Milestone 2 section](DESIGN.md#milestone-2--cr3bp-dynamics-equilibrium-points-propagation-and-jacobi-verification).
+
+**No halo orbit exists yet** — this is generic, halo-agnostic CR3BP
+infrastructure only.
+
+Equilibrium points, solved numerically (not hardcoded) via `brentq`:
+
+| Point | x (nondim) | Residual | Distance from Moon |
+|---|---:|---:|---:|
+| L1 | 0.8369151341 | 2.2e-16 | 58,019.138 km |
+| L2 | 1.1556821589 | 1.9e-14 | 64,514.906 km |
+| L3 | -1.0050626451 | 5.0e-16 | 766,075.396 km |
+
+L2 reproduces the M1 hand value to 10 decimal places. Verification
+highlights: Jacobi conservation to `<2e-11` over a 10-day test
+trajectory (see figure below), equilibrium states stationary under
+propagation to numerical round-off (L2's mild ~1.8e-8 drift over 30
+days reflects its known dynamical *instability*, not an error), an
+independent from-scratch acceleration cross-check agreeing to
+`1.3e-15`, and a 3-tolerance convergence study showing monotonic
+improvement. 85 tests pass.
+
+![M2 verification trajectory and Jacobi conservation error](figures/m2_fig2_verification_trajectory_jacobi.png)
+
+*A benign non-equilibrium test trajectory near L2 — explicitly NOT a
+halo orbit — used only to exercise the propagator and Jacobi
+diagnostic.*
+
 ## Preliminary insertion-Δv expectation (**M1, not yet computed — a regression bound only**)
 
 Two independent M1 hand estimates (literature order-of-magnitude +
@@ -97,8 +130,8 @@ Illustrative only — no propulsion architecture is finalized.
 | Milestone | Scope |
 |---|---|
 | **M1 ✅** | Mission definition, CR3BP derivation, L2 calculation, insertion-Δv definition, hand estimates |
-| M2 | CR3BP integrator, equilibrium-point solver, Jacobi conservation verification |
-| M3 | Richardson analytical halo seed + differential correction to a periodic orbit |
+| **M2 ✅** | CR3BP integrator, equilibrium-point solver, Jacobi conservation verification |
+| M3 (next) | Richardson analytical halo seed + differential correction to a periodic orbit |
 | M4 | Arrival-state model + insertion-point Δv calculation + sensitivity study |
 | M5 | Trade study: halo size, insertion point, transfer geometry, propellant implications |
 | M6 | Independent validation, convergence study, final figures, portfolio packaging |
@@ -119,17 +152,22 @@ pip install -e ".[dev]"
 pytest -W error
 ```
 
-M1 ships one placeholder test module confirming package metadata and
-that no numerical CR3BP solver is falsely claimed to exist yet.
+85 tests pass as of M2: constants/normalization round-trips, CR3BP
+potential/gradient/RHS validation (including an independent from-scratch
+acceleration cross-check and symmetry checks), L1/L2/L3 equilibrium
+residuals, Jacobi-constant identities, and propagation/convergence
+checks. No halo-specific tests exist yet — those begin at M3.
 
 ## Repository layout
 
 ```
 DESIGN.md                    full derivations, equations, assumptions
 README.md                    this file
-src/halo_insertion/          package (metadata only at M1)
-tests/                       pytest suite
-scripts/                     analysis scripts (empty at M1)
-figures/                     generated figures (empty at M1)
-results/                     numerical results (empty at M1)
+src/halo_insertion/          package: constants, normalization, CR3BP
+                              dynamics, equilibria, propagation (M2)
+tests/                       pytest suite (85 tests as of M2)
+scripts/make_m2_figures.py   generates the M2 diagnostic figures
+figures/                     M2 diagnostic figures (equilibrium
+                              geometry, verification trajectory/Jacobi)
+results/                     numerical results (empty through M2)
 ```
